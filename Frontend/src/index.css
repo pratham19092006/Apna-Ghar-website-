@@ -1,0 +1,324 @@
+@import "tailwindcss";
+
+:root {
+	--bg: #f7f8ff;
+	--surface: #ffffff;
+	--surface-muted: #f6f8ff;
+	--ink: #1f2240;
+	--ink-soft: #4b567f;
+	--brand: #0f62fe;
+	--brand-strong: #1f4fe0;
+	--accent: #ff6b2c;
+	--danger: #cf2b4b;
+	--line: #dde3ff;
+	--glow: rgba(15, 98, 254, 0.2);
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	height: auto;
+	min-height: 100%;
+	overflow-x: hidden;
+	overflow-y: visible;
+	scroll-behavior: smooth;
+}
+
+body {
+	height: auto;
+	min-height: 100%;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
+#root {
+	height: auto;
+	min-height: 100%;
+	overflow-x: hidden;
+	overflow-y: visible;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	font-family: "Segoe UI", "Avenir Next", "Trebuchet MS", sans-serif;
+	color: var(--ink);
+	background:
+		radial-gradient(circle at 16% 8%, rgba(15, 98, 254, 0.2), transparent 35%),
+		radial-gradient(circle at 85% 76%, rgba(255, 107, 44, 0.17), transparent 30%),
+		linear-gradient(180deg, #f9faff 0%, #f5f7ff 100%),
+		var(--bg);
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.app-shell {
+	min-height: 100vh;
+	padding-bottom: 2rem;
+	position: relative;
+	overflow-x: hidden;
+	overflow-y: visible;
+}
+
+.app-shell::before,
+.app-shell::after {
+	content: "";
+	position: absolute;
+	z-index: -1;
+	border-radius: 999px;
+	filter: blur(60px);
+}
+
+.app-shell::before {
+	top: -120px;
+	right: -90px;
+	width: 280px;
+	height: 280px;
+	background: rgba(15, 98, 254, 0.19);
+}
+
+.app-shell::after {
+	left: -120px;
+	bottom: -80px;
+	width: 240px;
+	height: 240px;
+	background: rgba(255, 107, 44, 0.16);
+}
+
+.top-nav {
+	position: sticky;
+	top: 0;
+	z-index: 40;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: min(96%, 1200px);
+	margin: 0.6rem auto 0;
+	padding: 0.85rem 1.15rem;
+	background: linear-gradient(90deg, rgba(255, 255, 255, 0.92), rgba(247, 249, 255, 0.86));
+	border-bottom: 1px solid #e7ebff;
+	border: 1px solid #dfe6ff;
+	border-radius: 16px;
+	backdrop-filter: blur(12px);
+	box-shadow: 0 8px 30px rgba(22, 36, 96, 0.08);
+}
+
+.top-nav > :last-child {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.65rem;
+}
+
+.brand-mark {
+	font-size: 1.5rem;
+	font-weight: 900;
+	letter-spacing: 0.03em;
+	background: linear-gradient(120deg, var(--brand) 0%, #4b2cff 45%, var(--accent) 100%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+}
+
+.apn-ghar-logo {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+}
+
+.apn-ghar-svg {
+	width: 250px;
+	height: 62px;
+	display: block;
+}
+
+.apna-back {
+	font-size: 39px;
+	font-weight: 900;
+	fill: #2046c2;
+	opacity: 0.9;
+}
+
+.ghar-front {
+	font-size: 39px;
+	font-weight: 900;
+	fill: #ff6b2c;
+}
+
+.apn-ghar-subtitle {
+	padding: 0.28rem 0.62rem;
+	border-radius: 999px;
+	font-size: 0.65rem;
+	font-weight: 800;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	background: #e8efff;
+	color: #2448bc;
+	border: 1px solid #c8d6ff;
+}
+
+.card {
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 255, 0.92));
+	border: 1px solid #dfe5ff;
+	border-radius: 18px;
+	box-shadow: 0 22px 46px rgba(19, 34, 97, 0.12);
+}
+
+.soft-card {
+	background: linear-gradient(140deg, #f5f8ff 0%, #edf2ff 100%);
+	border: 1px solid #d8e2ff;
+	border-radius: 16px;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+.btn {
+	border: 1px solid transparent;
+	border-radius: 12px;
+	padding: 0.62rem 1.08rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.btn-primary {
+	background: linear-gradient(135deg, var(--brand) 0%, #2851f5 55%, #5b43ff 100%);
+	color: #fff;
+	box-shadow: 0 10px 20px var(--glow);
+}
+
+.btn-primary:hover {
+	transform: translateY(-1px);
+	filter: brightness(1.03);
+}
+
+.btn-warn {
+	background: linear-gradient(130deg, #ff7b31, var(--accent));
+	color: #fff;
+}
+
+.btn-danger {
+	background: linear-gradient(130deg, #e74667, var(--danger));
+	color: #fff;
+}
+
+.nav-action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.5rem 0.9rem;
+	border-radius: 999px;
+	font-size: 0.84rem;
+	font-weight: 700;
+	letter-spacing: 0.01em;
+	border: 1px solid #d8e1ff;
+	background: rgba(255, 255, 255, 0.82);
+	color: #30437f;
+	transition: all 0.22s ease;
+}
+
+.nav-action:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 8px 16px rgba(21, 49, 133, 0.12);
+	border-color: #becdff;
+}
+
+.nav-action-primary {
+	border-color: transparent;
+	background: linear-gradient(130deg, #2958f8 0%, #563dff 55%, #ff6b2c 100%);
+	color: #ffffff;
+	box-shadow: 0 10px 20px rgba(25, 72, 238, 0.2);
+}
+
+.nav-action-primary:hover {
+	filter: brightness(1.03);
+	box-shadow: 0 12px 22px rgba(25, 72, 238, 0.26);
+}
+
+.nav-action-login {
+	border-color: #c8d4ff;
+	background: linear-gradient(120deg, #eef2ff 0%, #e8edff 50%, #f5edff 100%);
+	color: #2943b2;
+	box-shadow: 0 8px 16px rgba(30, 68, 185, 0.12);
+}
+
+.nav-action-login:hover {
+	border-color: #b8c8ff;
+	box-shadow: 0 10px 18px rgba(30, 68, 185, 0.16);
+}
+
+.field {
+	width: 100%;
+	border: 1px solid #cad5ff;
+	border-radius: 12px;
+	padding: 0.68rem 0.84rem;
+	background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+	color: var(--ink);
+}
+
+.field:focus {
+	outline: none;
+	border-color: var(--brand);
+	box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.16);
+}
+
+.data-table {
+	width: 100%;
+	border-collapse: collapse;
+	background: rgba(255, 255, 255, 0.75);
+	backdrop-filter: blur(10px);
+	border-radius: 14px;
+	overflow: hidden;
+}
+
+.data-table th,
+.data-table td {
+	border-bottom: 1px solid #e4e9ff;
+	padding: 0.75rem;
+	text-align: left;
+}
+
+.data-table th {
+	background: linear-gradient(90deg, #e8eeff, #edf3ff);
+	color: #1f3d96;
+	font-weight: 700;
+}
+
+.data-table tbody tr:hover {
+	background: rgba(15, 98, 254, 0.06);
+}
+
+.section-kicker {
+	font-size: 0.72rem;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 0.18em;
+	color: #365bd8;
+}
+
+@media (max-width: 768px) {
+	.top-nav {
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.6rem;
+		padding: 0.75rem 0.8rem;
+		width: 95%;
+		margin-top: 0.45rem;
+		backdrop-filter: none;
+	}
+
+	.apn-ghar-svg {
+		width: 212px;
+		height: 54px;
+	}
+
+	.top-nav > :last-child {
+		width: 100%;
+		flex-wrap: wrap;
+	}
+}
