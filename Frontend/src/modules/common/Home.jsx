@@ -1,5 +1,5 @@
-import { useContext, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import p1 from "../../images/p1.jpg";
 import p2 from "../../images/p2.jpg";
 import p3 from "../../images/p3.jpg";
@@ -12,11 +12,19 @@ const images = [p1, p2, p3, p4];
 
 const Home = () => {
   const session = useContext(UserContext);
+  const navigate = useNavigate();
   const [properties, setProperties] = useState([]);
   const [propertyTypeFilter, setPropertyTypeFilter] = useState("");
   const [propertyAdFilter, setPropertyAdFilter] = useState("");
   const [addressFilter, setAddressFilter] = useState("");
   const [loadFailed, setLoadFailed] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountButtonRef = useRef(null);
+  const accountPanelRef = useRef(null);
+  const [continueStatus, setContinueStatus] = useState(
+    () => localStorage.getItem("preferredMode") || "owner"
+  );
+  const isRenterMode = continueStatus === "renter";
 
   const fetchProperties = async () => {
     try {
@@ -53,19 +61,115 @@ const Home = () => {
 
   const dashboardPath = useMemo(() => {
     if (!session?.userData?.type) return "/";
-    if (session.userData.type === "Admin") return "/adminhome";
-    if (session.userData.type === "Owner") return "/ownerhome";
-    return "/renterhome";
-  }, [session?.userData?.type]);
+    if (String(session.userData.type).toLowerCase() === "admin") return "/adminhome";
+    return continueStatus === "renter" ? "/renterhome" : "/ownerhome";
+  }, [continueStatus, session?.userData?.type]);
 
   const userInitial = session?.userData?.name?.charAt(0)?.toUpperCase() || "U";
 
+  const accountDetails = useMemo(() => {
+    if (!session?.userData) return [];
+
+    return Object.entries(session.userData)
+      .filter(([key, value]) => {
+        const normalizedKey = key.toLowerCase();
+        if (normalizedKey === "password" || key === "__v") return false;
+        if (normalizedKey === "_id" || normalizedKey.endsWith("id")) return false;
+        return value !== undefined && value !== null && value !== "";
+      })
+      .map(([key, value]) => {
+        const normalizedKey = key.toLowerCase();
+
+        if (normalizedKey === "type") {
+          const accountType = String(value).toLowerCase() === "admin" ? "Admin" : "User";
+          return {
+            key,
+            label: "Account Type",
+            value: accountType,
+            status: "default",
+          };
+        }
+
+        if (normalizedKey === "mode") {
+          return null;
+        }
+
+        if (normalizedKey === "granted") {
+          if (continueStatus !== "owner") {
+            return null;
+          }
+
+          const isGrantedOwner = String(value).toLowerCase() === "granted";
+          return {
+            key,
+            label: "Owner Access",
+            value: isGrantedOwner ? "Granted as owner" : "Not granted as owner",
+            status: isGrantedOwner ? "granted" : "not-granted",
+          };
+        }
+
+        return {
+          key,
+          label: key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase()),
+          value: Array.isArray(value)
+            ? value.join(", ")
+            : typeof value === "object"
+              ? JSON.stringify(value)
+              : String(value),
+          status: "default",
+        };
+      })
+      .filter(Boolean);
+  }, [continueStatus, session?.userData]);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (!accountMenuOpen) return;
+
+      const clickedInsideButton = accountButtonRef.current?.contains(event.target);
+      const clickedInsidePanel = accountPanelRef.current?.contains(event.target);
+
+      if (!clickedInsideButton && !clickedInsidePanel) {
+        setAccountMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [accountMenuOpen]);
+
   const handleLogout = () => {
     localStorage.removeItem("user");
+    setAccountMenuOpen(false);
     if (session) {
       session.setUserData(null);
       session.setUserLoggedIn(false);
     }
+  };
+
+  const handleHeroContinue = () => {
+    localStorage.setItem("preferredMode", continueStatus);
+
+    if (session?.userLoggedIn) {
+      navigate(continueStatus === "renter" ? "/renterhome" : "/ownerhome");
+      return;
+    }
+
+    navigate("/login");
+  };
+
+  const handleRenterCardAction = (property) => {
+    if (session?.userLoggedIn) {
+      navigate("/renterhome", {
+        state: { openBookingPropertyId: property?._id },
+      });
+      return;
+    }
+    if (property?._id) {
+      localStorage.setItem("pendingBookingPropertyId", property._id);
+      localStorage.setItem("preferredMode", "renter");
+    }
+    navigate("/login");
   };
 
   return (
@@ -73,10 +177,16 @@ const Home = () => {
       <nav className="top-nav">
         <ApnaGharLogo />
         {session?.userLoggedIn && session?.userData ? (
-          <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-sm font-black text-white">
+          <div className="relative flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
+            <button
+              ref={accountButtonRef}
+              type="button"
+              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-indigo-600 text-sm font-black text-white transition hover:brightness-110"
+              onClick={() => setAccountMenuOpen((prev) => !prev)}
+              aria-label="Open account details"
+            >
               {userInitial}
-            </span>
+            </button>
             <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
               {session.userData.name}
             </span>
@@ -86,6 +196,30 @@ const Home = () => {
             <button className="nav-action nav-action-login" onClick={handleLogout}>
               Logout
             </button>
+
+            {accountMenuOpen ? (
+              <section
+                ref={accountPanelRef}
+                className="absolute right-0 top-12 z-50 w-[320px] rounded-2xl border border-indigo-100 bg-white/95 p-4 shadow-2xl backdrop-blur"
+              >
+                <p className="section-kicker">Account Details</p>
+                <h4 className="mt-1 text-base font-extrabold text-slate-900">{session.userData.name}</h4>
+                <div className="mt-3 space-y-2 text-sm">
+                  {accountDetails.map((detail) => (
+                    <div key={detail.key} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{detail.label}</p>
+                      {detail.status === "granted" ? (
+                        <p className="mt-0.5 break-words font-semibold text-emerald-700">✓ {detail.value}</p>
+                      ) : detail.status === "not-granted" ? (
+                        <p className="mt-0.5 break-words font-semibold text-red-700">✗ {detail.value}</p>
+                      ) : (
+                        <p className="mt-0.5 break-words font-semibold text-slate-800">{detail.value}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </div>
         ) : (
           <div className="flex gap-3 text-sm font-semibold text-slate-700">
@@ -107,18 +241,45 @@ const Home = () => {
         <div className="space-y-5">
           <p className="section-kicker">Urban Living Reimagined</p>
           <h1 className="max-w-2xl text-4xl font-black leading-tight text-slate-900 md:text-5xl">
-            Discover Stylish Rentals Without The Search Stress.
+            {isRenterMode
+              ? "Discover Your Next Home Without The Search Stress."
+              : "List And Manage Rental Properties With Confidence."}
           </h1>
           <p className="max-w-xl text-sm text-slate-600 md:text-base">
-            ApnaGhar helps you explore quality homes, connect with owners, and book faster with a clean end-to-end experience.
+            {isRenterMode
+              ? "ApnaGhar helps you explore quality homes, compare options quickly, and book faster with a clean end-to-end renter experience."
+              : "ApnaGhar helps you publish listings, manage availability, and handle booking requests from one streamlined owner workspace."}
           </p>
-          <div className="flex flex-wrap gap-3">
-            <Link to="/register" className="btn btn-primary">
-              Start As Owner
-            </Link>
-            <Link to="/login" className="btn border border-slate-300 bg-white text-slate-700">
-              Login To Continue
-            </Link>
+          <div className="hero-action-row">
+            <label className="hero-select-wrap" htmlFor="continue-status">
+              <span className="hero-select-caption">Continue As</span>
+              <select
+                id="continue-status"
+                className="hero-select"
+                value={continueStatus}
+                onChange={(e) => {
+                  const selectedMode = e.target.value;
+                  setContinueStatus(selectedMode);
+                  localStorage.setItem("preferredMode", selectedMode);
+                }}
+              >
+                <option value="owner">Owner - Post & Manage</option>
+                <option value="renter">Renter - Browse & Book</option>
+              </select>
+            </label>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleHeroContinue}
+            >
+              {session?.userLoggedIn
+                ? isRenterMode
+                  ? "You are now renter"
+                  : "You are now owner"
+                : isRenterMode
+                  ? "Start As Renter"
+                  : "Start As Owner"}
+            </button>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3">
@@ -141,13 +302,27 @@ const Home = () => {
           <div className="absolute -bottom-12 -left-12 h-44 w-44 rounded-full bg-orange-300/25 blur-md"></div>
           <div className="relative space-y-4">
             <p className="inline-block rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
-              Smart Matching
+              {isRenterMode ? "Renter Focus" : "Owner Focus"}
             </p>
-            <h3 className="text-2xl font-black">Find The Right Property Type For Your Lifestyle</h3>
+            <h3 className="text-2xl font-black">
+              {isRenterMode
+                ? "Find The Right Property Type For Your Lifestyle"
+                : "Reach The Right Renters For Every Listing"}
+            </h3>
             <ul className="space-y-2 text-sm text-blue-50">
-              <li>Residential, commercial, and land options</li>
-              <li>Clear owner details and listing availability</li>
-              <li>Simple booking request flow</li>
+              {isRenterMode ? (
+                <>
+                  <li>Residential, commercial, and land options</li>
+                  <li>Clear owner details and listing availability</li>
+                  <li>Simple booking request flow</li>
+                </>
+              ) : (
+                <>
+                  <li>Post listings with images and pricing in minutes</li>
+                  <li>Track booking requests and status from one place</li>
+                  <li>Manage property availability without extra tools</li>
+                </>
+              )}
             </ul>
           </div>
         </div>
@@ -157,12 +332,20 @@ const Home = () => {
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="section-kicker">Live Inventory</p>
-            <h3 className="text-2xl font-extrabold text-slate-900">Featured Listings</h3>
-            <p className="text-sm text-slate-600">Filter by area, property category, and ad type in one click.</p>
+            <h3 className="text-2xl font-extrabold text-slate-900">
+              {isRenterMode ? "Featured Listings" : "Trending Listings From Owners"}
+            </h3>
+            <p className="text-sm text-slate-600">
+              {isRenterMode
+                ? "Filter by area, property category, and ad type in one click."
+                : "See what top-performing listings look like and plan your next posting strategy."}
+            </p>
           </div>
-          <Link to="/register" className="btn btn-warn">
-            Become an Owner
-          </Link>
+          {!session?.userLoggedIn ? (
+            <Link to="/register" className="btn btn-warn">
+              {isRenterMode ? "Create Renter Account" : "Become an Owner"}
+            </Link>
+          ) : null}
         </div>
 
         <div className="space-y-4">
@@ -209,7 +392,14 @@ const Home = () => {
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {filteredProperties.length > 0 ? (
-              filteredProperties.map((property) => (
+              filteredProperties.map((property) => {
+                const isOwnProperty =
+                  session?.userLoggedIn &&
+                  session?.userData?._id &&
+                  property?.ownerId &&
+                  String(property.ownerId) === String(session.userData._id);
+
+                return (
                 <article key={property._id} className="card overflow-hidden">
                   <img
                     src={`${API_BASE_URL}${property.propertyImage?.[0]?.path || ""}`}
@@ -224,16 +414,51 @@ const Home = () => {
                     <p className="text-sm text-slate-700">
                       <b>Price:</b> Rs {property.propertyAmt}
                     </p>
-                    <p
-                      className={`text-xs font-semibold ${
-                        property.isAvailable === "Available" ? "text-emerald-700" : "text-red-700"
-                      }`}
-                    >
-                      {property.isAvailable}
-                    </p>
+                    {isRenterMode ? (
+                      <>
+                        <p
+                          className={`text-xs font-semibold ${
+                            property.isAvailable === "Available" ? "text-emerald-700" : "text-red-700"
+                          }`}
+                        >
+                          {property.isAvailable}
+                        </p>
+                        <p className="text-sm text-slate-700">
+                          <b>Owner Contact:</b> {property.ownerContact || "Available after login"}
+                        </p>
+                        {isOwnProperty ? (
+                          <p className="mt-2 text-xs font-semibold text-slate-500">
+                            You posted this property, so booking is disabled.
+                          </p>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-primary mt-2 w-full"
+                            onClick={() => handleRenterCardAction(property)}
+                          >
+                            {session?.userLoggedIn ? "Get Info / Book This Home" : "Login To Get Info / Book"}
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      isOwnProperty ? (
+                        <p className="text-xs font-semibold text-emerald-700">
+                          You are the owner
+                        </p>
+                      ) : (
+                        <p
+                          className={`text-xs font-semibold ${
+                            property.isAvailable === "Available" ? "text-emerald-700" : "text-red-700"
+                          }`}
+                        >
+                          {property.isAvailable}
+                        </p>
+                      )
+                    )}
                   </div>
                 </article>
-              ))
+                );
+              })
             ) : (
               <p className="text-sm text-slate-500">No properties available at the moment.</p>
             )}
@@ -241,21 +466,33 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-indigo-100 bg-white p-4 shadow-xl">
+      <section className="visual-tour-section overflow-hidden rounded-2xl border border-indigo-100 bg-white p-4 shadow-xl">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <p className="section-kicker">Visual Tour</p>
             <h4 className="text-lg font-extrabold text-slate-900">Gallery Of Popular Spaces</h4>
           </div>
-          <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">Static Preview</span>
+          <span className="visual-tour-badge rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">Live Preview</span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {images.map((img, idx) => (
-            <article key={`${img}-${idx}`} className="overflow-hidden rounded-xl border border-indigo-100 shadow-sm">
-              <img src={img} alt={`Property preview ${idx + 1}`} className="h-32 w-full object-cover md:h-36" />
-            </article>
-          ))}
+        <div className="visual-tour-marquee">
+          <div className="visual-tour-track">
+            {[...images, ...images].map((img, idx) => (
+              <article
+                key={`${img}-${idx}`}
+                className="visual-tour-card visual-tour-marquee-card overflow-hidden rounded-xl border border-indigo-100 shadow-sm"
+                style={{ "--stagger": idx % images.length }}
+              >
+                <img
+                  src={img}
+                  alt={`Property preview ${(idx % images.length) + 1}`}
+                  className="visual-tour-image h-32 w-full object-cover md:h-36"
+                  loading="eager"
+                  fetchPriority="high"
+                />
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 

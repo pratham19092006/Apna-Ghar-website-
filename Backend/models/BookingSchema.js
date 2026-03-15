@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 
 const bookingModel = mongoose.Schema(
   {
+    propertyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "propertyschema",
+    },
     propertId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "propertyschema",
@@ -21,6 +25,22 @@ const bookingModel = mongoose.Schema(
     phone: {
       type: String,
       required: [true, "Please provide a Phone Number"],
+    },
+    address: {
+      type: String,
+      required: [true, "Please provide an Address"],
+    },
+    memberCount: {
+      type: Number,
+      required: [true, "Please provide member count"],
+    },
+    femaleCount: {
+      type: Number,
+      required: [true, "Please provide female member count"],
+    },
+    maleCount: {
+      type: Number,
+      required: [true, "Please provide male member count"],
     },
     bookingStatus: {
       type: String,

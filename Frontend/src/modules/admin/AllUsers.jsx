@@ -32,22 +32,6 @@ const AllUsers = () => {
     }
   };
 
-  const updateStatus = async (userid, status) => {
-    try {
-      const res = await http.post("/api/admin/handlestatus", { userid, status });
-
-      if (res.data.success) {
-        showToast("success", "Status updated successfully");
-        fetchUsers();
-      } else {
-        showToast("error", res.data.message);
-      }
-    } catch (error) {
-      console.error(error);
-      showToast("error", "Failed to update status");
-    }
-  };
-
   return (
     <div className="relative mt-4">
       {toast.show && (
@@ -65,8 +49,6 @@ const AllUsers = () => {
             <th>Name</th>
             <th>Email</th>
             <th>Type</th>
-            <th>Granted</th>
-            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -76,31 +58,12 @@ const AllUsers = () => {
                 <td>{user._id}</td>
                 <td>{user.name}</td>
                 <td>{user.email}</td>
-                <td>{user.type}</td>
-                <td>{user.granted}</td>
-                <td>
-                  {user.type === "Owner" && user.granted === "ungranted" && (
-                    <button
-                      onClick={() => updateStatus(user._id, "granted")}
-                      className="btn btn-primary text-xs"
-                    >
-                      Grant
-                    </button>
-                  )}
-                  {user.type === "Owner" && user.granted === "granted" && (
-                    <button
-                      onClick={() => updateStatus(user._id, "ungranted")}
-                      className="btn btn-danger text-xs"
-                    >
-                      Ungrant
-                    </button>
-                  )}
-                </td>
+                <td>{String(user.type).toLowerCase() === "admin" ? "Admin" : "User"}</td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="6">No users found</td>
+              <td colSpan="4">No users found</td>
             </tr>
           )}
         </tbody>

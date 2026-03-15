@@ -12,12 +12,32 @@ const userModel = mongoose.Schema({
     type: String,
     required: [true, "email is required"],
   },
+  phone: {
+    type: String,
+    required: [true, "phone is required"],
+    trim: true,
+  },
   password: {
     type: String,
     required: [true, "password is required"],
   },
+  phoneVerified: {
+    type: Boolean,
+    default: false,
+  },
+  phoneOtpCode: {
+    type: String,
+    default: null,
+  },
+  phoneOtpExpiresAt: {
+    type: Date,
+    default: null,
+  },
   type: {
     type: String,
+    enum: ["user", "admin"],
+    lowercase: true,
+    trim: true,
     required: [true, "type is required"],
   },
 },{

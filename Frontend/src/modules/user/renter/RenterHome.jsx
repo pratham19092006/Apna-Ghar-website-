@@ -1,5 +1,5 @@
 import { useContext, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { UserContext } from "../../../context/userContext";
 import AllPropertiesCards from "../AllPropertiesCards";
 import AllProperty from "./AllProperties";
@@ -10,6 +10,10 @@ const RenterHome = () => {
   const session = useContext(UserContext);
   const [activeTab, setActiveTab] = useState(0);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [autoOpenPropertyId, setAutoOpenPropertyId] = useState(
+    () => location.state?.openBookingPropertyId || ""
+  );
 
   if (!session || !session.userData) return null;
 
@@ -65,7 +69,13 @@ const RenterHome = () => {
         </section>
 
         <section className="card p-5">
-          {activeTab === 0 && <AllPropertiesCards loggedIn={session.userLoggedIn} />}
+          {activeTab === 0 && (
+            <AllPropertiesCards
+              loggedIn={session.userLoggedIn}
+              autoOpenPropertyId={autoOpenPropertyId}
+              onAutoOpenHandled={() => setAutoOpenPropertyId("")}
+            />
+          )}
           {activeTab === 1 && <AllProperty />}
         </section>
       </main>

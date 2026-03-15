@@ -14,8 +14,7 @@ const OwnerAllBookings = () => {
       if (response.data.success) {
         setAllBookings(response.data.data);
       } else {
-        message.error(response.data.message || "Unauthorized access");
-        navigate("/login"); 
+        message.error(response.data.message || "Failed to fetch bookings");
       }
     } catch (error) {
       console.log(error);
@@ -60,7 +59,11 @@ const OwnerAllBookings = () => {
         <th>Booking ID</th>
         <th>Property ID</th>
         <th>Tenant Name</th>
+        <th>Address</th>
         <th>Tenant Phone</th>
+        <th>Total Members</th>
+        <th>Female Members</th>
+        <th>Male Members</th>
         <th>Booking Status</th>
         <th>Actions</th>
       </tr>
@@ -72,7 +75,11 @@ const OwnerAllBookings = () => {
             <td>{booking._id}</td>
             <td>{booking.propertyId}</td>
             <td>{booking.userName}</td>
+            <td>{booking.address || "-"}</td>
             <td>{booking.phone}</td>
+            <td>{booking.memberCount ?? "-"}</td>
+            <td>{booking.femaleCount ?? "-"}</td>
+            <td>{booking.maleCount ?? "-"}</td>
             <td>{booking.bookingStatus}</td>
             <td>
               {booking.bookingStatus === "pending" ? (
@@ -99,7 +106,7 @@ const OwnerAllBookings = () => {
         ))
       ) : (
         <tr>
-          <td colSpan={6}>No bookings available</td>
+          <td colSpan={10}>No bookings available</td>
         </tr>
       )}
     </tbody>

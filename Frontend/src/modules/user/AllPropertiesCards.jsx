@@ -2,14 +2,40 @@ import { useEffect, useState } from "react";
 import Toast from "../common/Toast";
 import http, { API_BASE_URL } from "../common/http";
 
-const AllPropertiesCards = ({ loggedIn }) => {
+const AllPropertiesCards = ({
+  loggedIn,
+  autoOpenPropertyId = "",
+  onAutoOpenHandled = () => {},
+}) => {
+  const initialUserDetails = {
+    fullName: "",
+    address: "",
+    phone: "",
+    memberCount: "",
+    femaleCount: "",
+    maleCount: "",
+  };
+
+  const currentUser = (() => {
+    try {
+      const rawUser = localStorage.getItem("user");
+      return rawUser ? JSON.parse(rawUser) : null;
+    } catch {
+      return null;
+    }
+  })();
   const [properties, setProperties] = useState([]);
   const [propertyTypeFilter, setPropertyTypeFilter] = useState("");
   const [propertyAdFilter, setPropertyAdFilter] = useState("");
   const [addressFilter, setAddressFilter] = useState("");
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [focusedProperty, setFocusedProperty] = useState(null);
-  const [userDetails, setUserDetails] = useState({ fullName: "", phone: "" });
+  const [userDetails, setUserDetails] = useState(initialUserDetails);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
   const [toast, setToast] = useState({ show: false, type: "", message: "" });
 
   const showToast = (type, message) => {
@@ -25,12 +51,21 @@ const AllPropertiesCards = ({ loggedIn }) => {
     }
   };
 
-  const handleBooking = async (status, propertyId, ownerId) => {
+  const handleBooking = async (status, propertyId) => {
     try {
+      const userDataRes = await http.post("/api/user/getuserdata");
+      const authenticatedUser = userDataRes.data?.data;
+
+      if (!authenticatedUser?.phoneVerified) {
+        return showToast(
+          "error",
+          "Please verify your phone number first using Send OTP and Verify"
+        );
+      }
+
       const res = await http.post(`/api/user/bookinghandle/${propertyId}`, {
         userDetails,
         status,
-        ownerId,
       });
 
       if (res.data.success) {
@@ -41,13 +76,85 @@ const AllPropertiesCards = ({ loggedIn }) => {
       }
     } catch (error) {
       console.log(error);
-      showToast("error", "Booking failed");
+      const serverMessage = error?.response?.data?.message;
+      showToast("error", serverMessage || "Booking failed");
     }
   };
 
   useEffect(() => {
     fetchProperties();
   }, []);
+
+  useEffect(() => {
+    if (!loggedIn || !autoOpenPropertyId || properties.length === 0) {
+      return;
+    }
+
+    const matchedProperty = properties.find(
+      (property) => property._id === autoOpenPropertyId
+    );
+
+    if (matchedProperty) {
+      setFocusedProperty(matchedProperty);
+      setBookingModalOpen(true);
+    }
+
+    onAutoOpenHandled();
+  }, [autoOpenPropertyId, loggedIn, onAutoOpenHandled, properties]);
+
+  const requestOtp = async () => {
+    const phone = String(userDetails.phone || "").trim();
+
+    if (!phone) {
+      return showToast("error", "Please enter phone number first");
+    }
+
+    try {
+      setOtpSending(true);
+      const otpRequestRes = await http.post("/api/user/request-phone-otp", { phone });
+
+      if (!otpRequestRes.data?.success) {
+        return showToast("error", otpRequestRes.data?.message || "OTP request failed");
+      }
+
+      setOtpRequested(true);
+      showToast("success", otpRequestRes.data?.message || "OTP sent successfully");
+
+      if (otpRequestRes.data?.demoOtp) {
+        showToast("success", `Demo OTP: ${otpRequestRes.data.demoOtp}`);
+      }
+    } catch (error) {
+      showToast("error", error.response?.data?.message || "OTP request failed");
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    const otp = String(otpCode || "").trim();
+
+    if (!otp) {
+      return showToast("error", "Please enter OTP");
+    }
+
+    try {
+      setOtpVerifying(true);
+      const otpVerifyRes = await http.post("/api/user/verify-phone-otp", { otp });
+
+      if (!otpVerifyRes.data?.success) {
+        return showToast("error", otpVerifyRes.data?.message || "OTP verification failed");
+      }
+
+      setIsPhoneVerified(true);
+      setOtpRequested(false);
+      setOtpCode("");
+      showToast("success", otpVerifyRes.data?.message || "Phone verified successfully");
+    } catch (error) {
+      showToast("error", error.response?.data?.message || "OTP verification failed");
+    } finally {
+      setOtpVerifying(false);
+    }
+  };
 
   const filteredProperties = properties
     .filter(
@@ -74,6 +181,13 @@ const AllPropertiesCards = ({ loggedIn }) => {
 
   const openBookingModal = (property) => {
     setFocusedProperty(property);
+    setUserDetails((prev) => ({
+      ...initialUserDetails,
+      phone: currentUser?.phone || prev.phone,
+    }));
+    setOtpCode("");
+    setOtpRequested(false);
+    setIsPhoneVerified(Boolean(currentUser?.phoneVerified));
     setBookingModalOpen(true);
   };
 
@@ -126,6 +240,14 @@ const AllPropertiesCards = ({ loggedIn }) => {
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
         {filteredProperties.length > 0 ? (
           filteredProperties.map((property) => (
+            (() => {
+              const isOwnProperty =
+                loggedIn &&
+                currentUser?._id &&
+                property?.ownerId &&
+                String(property.ownerId) === String(currentUser._id);
+
+              return (
             <div
               key={property._id}
               className="card overflow-hidden"
@@ -155,12 +277,18 @@ const AllPropertiesCards = ({ loggedIn }) => {
                 )}
                 {property.isAvailable === "Available" ? (
                   loggedIn ? (
-                    <button
-                      onClick={() => openBookingModal(property)}
-                      className="btn btn-primary mt-2 w-full"
-                    >
-                      Get Info / Book
-                    </button>
+                    isOwnProperty ? (
+                      <p className="mt-2 text-xs font-semibold text-slate-500">
+                        You posted this property, so booking is disabled.
+                      </p>
+                    ) : (
+                      <button
+                        onClick={() => openBookingModal(property)}
+                        className="btn btn-primary mt-2 w-full"
+                      >
+                        Get Info / Book
+                      </button>
+                    )
                   ) : (
                     <p className="mt-2 text-xs text-amber-700">
                       Login to see details
@@ -171,6 +299,8 @@ const AllPropertiesCards = ({ loggedIn }) => {
                 )}
               </div>
             </div>
+              );
+            })()
           ))
         ) : (
           <p className="text-sm text-slate-500">No properties available at the moment.</p>
@@ -179,7 +309,7 @@ const AllPropertiesCards = ({ loggedIn }) => {
 
       {bookingModalOpen && focusedProperty && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="card relative w-full max-w-2xl p-6">
+          <div className="card relative w-full max-w-2xl max-h-[88vh] overflow-y-auto p-6">
             <button
               onClick={() => setBookingModalOpen(false)}
               className="absolute right-3 top-3 rounded-md border border-slate-300 px-2 py-1 text-xs"
@@ -224,7 +354,7 @@ const AllPropertiesCards = ({ loggedIn }) => {
               className="mt-4 space-y-2"
               onSubmit={(e) => {
                 e.preventDefault();
-                handleBooking("pending", focusedProperty._id, focusedProperty.ownerId);
+                handleBooking("pending", focusedProperty._id);
               }}
             >
               <input
@@ -239,16 +369,96 @@ const AllPropertiesCards = ({ loggedIn }) => {
                 }
               />
               <input
-                type="number"
-                name="phone"
-                placeholder="Phone Number"
+                type="text"
+                name="address"
+                placeholder="Your Address"
                 required
                 className="field"
-                value={userDetails.phone}
+                value={userDetails.address}
                 onChange={(e) =>
-                  setUserDetails({ ...userDetails, phone: e.target.value })
+                  setUserDetails({ ...userDetails, address: e.target.value })
                 }
               />
+              <div className="flex gap-2">
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="Phone Number"
+                  required
+                  className="field flex-1"
+                  value={userDetails.phone}
+                  onChange={(e) => {
+                    setUserDetails({ ...userDetails, phone: e.target.value });
+                    setIsPhoneVerified(false);
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-warn"
+                  onClick={requestOtp}
+                  disabled={otpSending || isPhoneVerified}
+                >
+                  {isPhoneVerified ? "Verified" : otpSending ? "Sending..." : "Send OTP"}
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  name="otp"
+                  placeholder="Enter 4-digit OTP"
+                  className="field flex-1"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  maxLength={4}
+                  disabled={isPhoneVerified}
+                />
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={verifyOtp}
+                  disabled={otpVerifying || isPhoneVerified || !otpRequested}
+                >
+                  {otpVerifying ? "Verifying..." : "Verify"}
+                </button>
+              </div>
+              <input
+                type="number"
+                name="memberCount"
+                placeholder="Total Members Want To Live"
+                required
+                min="1"
+                className="field"
+                value={userDetails.memberCount}
+                onChange={(e) =>
+                  setUserDetails({ ...userDetails, memberCount: e.target.value })
+                }
+              />
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  name="femaleCount"
+                  placeholder="No. of Female Members"
+                  required
+                  min="0"
+                  className="field flex-1"
+                  value={userDetails.femaleCount}
+                  onChange={(e) =>
+                    setUserDetails({ ...userDetails, femaleCount: e.target.value })
+                  }
+                />
+                <input
+                  type="number"
+                  name="maleCount"
+                  placeholder="No. of Male Members"
+                  required
+                  min="0"
+                  className="field flex-1"
+                  value={userDetails.maleCount}
+                  onChange={(e) =>
+                    setUserDetails({ ...userDetails, maleCount: e.target.value })
+                  }
+                />
+              </div>
               <button type="submit" className="btn btn-primary w-full">
                 Book Property
               </button>

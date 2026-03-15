@@ -33,6 +33,9 @@ const Login = () => {
         const signedInUser = res.data.user;
 
         localStorage.setItem("user", JSON.stringify(signedInUser));
+        if (res.data.token) {
+          localStorage.setItem("token", res.data.token);
+        }
         if (session) {
           session.setUserData(signedInUser);
           session.setUserLoggedIn(true);
@@ -41,15 +44,29 @@ const Login = () => {
         showToast("success", res.data.message);
 
         setTimeout(() => {
-          switch (signedInUser.type) {
-            case "Admin":
+          const preferredMode = localStorage.getItem("preferredMode") || "owner";
+          const pendingBookingPropertyId = localStorage.getItem("pendingBookingPropertyId");
+          const normalizedType = String(signedInUser.type || "").toLowerCase();
+          const accountType =
+            normalizedType === "admin"
+              ? "admin"
+              : ["user", "owner", "renter"].includes(normalizedType)
+                ? "user"
+                : normalizedType;
+
+          switch (accountType) {
+            case "admin":
               navigate("/adminhome");
               break;
-            case "Renter":
-              navigate("/renterhome");
-              break;
-            case "Owner":
-              navigate("/ownerhome");
+            case "user":
+              if (pendingBookingPropertyId) {
+                localStorage.removeItem("pendingBookingPropertyId");
+                navigate("/renterhome", {
+                  state: { openBookingPropertyId: pendingBookingPropertyId },
+                });
+              } else {
+                navigate(preferredMode === "renter" ? "/renterhome" : "/ownerhome");
+              }
               break;
             default:
               navigate("/");

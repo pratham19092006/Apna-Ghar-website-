@@ -43,7 +43,11 @@ const AdminAllBookings = () => {
             <th>Property ID</th>
             <th>Tenant ID</th>
             <th>Tenant Name</th>
+            <th>Tenant Address</th>
             <th>Tenant Contact</th>
+            <th>Total Members</th>
+            <th>Female Members</th>
+            <th>Male Members</th>
             <th>Booking Status</th>
           </tr>
         </thead>
@@ -56,13 +60,17 @@ const AdminAllBookings = () => {
                 <td>{booking.propertyId}</td>
                 <td>{booking.userID}</td>
                 <td>{booking.userName}</td>
+                <td>{booking.address || "-"}</td>
                 <td>{booking.phone}</td>
+                <td>{booking.memberCount ?? "-"}</td>
+                <td>{booking.femaleCount ?? "-"}</td>
+                <td>{booking.maleCount ?? "-"}</td>
                 <td>{booking.bookingStatus}</td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="7">No bookings found</td>
+              <td colSpan="11">No bookings found</td>
             </tr>
           )}
         </tbody>

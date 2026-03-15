@@ -22,7 +22,7 @@ html {
 	height: auto;
 	min-height: 100%;
 	overflow-x: hidden;
-	overflow-y: visible;
+	overflow-y: auto;
 	scroll-behavior: smooth;
 }
 
@@ -30,7 +30,7 @@ body {
 	height: auto;
 	min-height: 100%;
 	overflow-x: hidden;
-	overflow-y: auto;
+	overflow-y: visible;
 }
 
 #root {
@@ -59,10 +59,11 @@ a {
 
 .app-shell {
 	min-height: 100vh;
+	padding-top: 0rem;
 	padding-bottom: 2rem;
 	position: relative;
 	overflow-x: hidden;
-	overflow-y: visible;
+	overflow-y: clip;
 }
 
 .app-shell::before,
@@ -91,9 +92,8 @@ a {
 }
 
 .top-nav {
-	position: sticky;
-	top: 0;
-	z-index: 40;
+	position: relative;
+	z-index: 120;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -260,6 +260,55 @@ a {
 	color: var(--ink);
 }
 
+.hero-action-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: end;
+	gap: 0.75rem;
+}
+
+.hero-select-wrap {
+	display: grid;
+	gap: 0.28rem;
+	min-width: 240px;
+	flex: 1;
+	max-width: 370px;
+}
+
+.hero-select-caption {
+	font-size: 0.68rem;
+	font-weight: 800;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: #4663c8;
+	padding-left: 0.2rem;
+}
+
+.hero-select {
+	width: 100%;
+	border: 1px solid #c8d4ff;
+	border-radius: 12px;
+	padding: 0.65rem 0.85rem;
+	background: linear-gradient(180deg, #ffffff 0%, #f5f8ff 100%);
+	color: #25346a;
+	font-weight: 700;
+	box-shadow: 0 10px 22px rgba(39, 74, 186, 0.08);
+	cursor: pointer;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-select:focus {
+	outline: none;
+	border-color: #8fa9ff;
+	box-shadow: 0 0 0 3px rgba(80, 115, 244, 0.16);
+}
+
+.hero-select:disabled {
+	background: linear-gradient(180deg, #f5f7ff 0%, #eef2ff 100%);
+	color: #6474ac;
+	cursor: not-allowed;
+}
+
 .field:focus {
 	outline: none;
 	border-color: var(--brand);
@@ -300,6 +349,120 @@ a {
 	color: #365bd8;
 }
 
+@keyframes visualTourReveal {
+	0% {
+		opacity: 0;
+		transform: translateY(14px);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes visualTourCardIn {
+	0% {
+		opacity: 0;
+		transform: translateY(16px) scale(0.97);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes visualTourBadgePulse {
+	0%,
+	100% {
+		transform: translateY(0);
+		box-shadow: 0 0 0 0 rgba(54, 91, 216, 0.25);
+	}
+	50% {
+		transform: translateY(-1px);
+		box-shadow: 0 0 0 7px rgba(54, 91, 216, 0);
+	}
+}
+
+@keyframes visualTourMarquee {
+	0% {
+		transform: translateX(4%);
+	}
+	100% {
+		transform: translateX(-54%);
+	}
+}
+
+.visual-tour-section {
+	animation: visualTourReveal 580ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.visual-tour-badge {
+	animation: visualTourBadgePulse 2.8s ease-in-out infinite;
+}
+
+.visual-tour-marquee {
+	overflow: hidden;
+	width: 100%;
+	mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+.visual-tour-track {
+	display: flex;
+	gap: 0.75rem;
+	width: max-content;
+	animation: visualTourMarquee 12s linear infinite;
+	will-change: transform;
+}
+
+.visual-tour-marquee-card {
+	flex: 0 0 clamp(220px, 22vw, 340px);
+	opacity: 1;
+	animation: none;
+}
+
+.visual-tour-card {
+	opacity: 0;
+	animation: visualTourCardIn 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+	animation-delay: calc(var(--stagger, 0) * 110ms + 140ms);
+	transition: transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease;
+	will-change: transform;
+}
+
+.visual-tour-image {
+	transition: transform 420ms ease;
+	transform-origin: center;
+}
+
+.visual-tour-card:hover {
+	transform: translateY(-5px);
+	border-color: #8ea6ff;
+	box-shadow: 0 14px 26px rgba(23, 67, 176, 0.2);
+}
+
+.visual-tour-card:hover .visual-tour-image {
+	transform: scale(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.visual-tour-section,
+	.visual-tour-badge,
+	.visual-tour-card,
+	.visual-tour-track,
+	.visual-tour-image {
+		animation: none !important;
+		transition: none !important;
+	}
+
+	.visual-tour-marquee {
+		overflow-x: auto;
+		mask-image: none;
+	}
+
+	.visual-tour-card {
+		opacity: 1;
+	}
+}
+
 @media (max-width: 768px) {
 	.top-nav {
 		flex-direction: column;
@@ -320,5 +483,10 @@ a {
 	.top-nav > :last-child {
 		width: 100%;
 		flex-wrap: wrap;
+	}
+
+	.hero-select-wrap {
+		max-width: 100%;
+		min-width: 100%;
 	}
 }

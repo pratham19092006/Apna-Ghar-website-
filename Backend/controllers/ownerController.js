@@ -13,6 +13,19 @@ const addPropertyController = async (req, res) => {
     const images = mapUploadedImages(req.files);
     const owner = await UserModel.findById({ _id: req.body.userId });
 
+    if (!owner) {
+      return res
+        .status(404)
+        .send({ success: false, message: "User not found" });
+    }
+
+    if (!owner.phoneVerified) {
+      return res.status(403).send({
+        success: false,
+        message: "Please verify your phone number with OTP before posting property",
+      });
+    }
+
     const propertyEntry = new PropertyModel({
       ...req.body,
       propertyImage: images,

@@ -32,8 +32,7 @@ const OwnerAllProperties = () => {
       if (response.data.success) {
         setAllProperties(response.data.data);
       } else {
-        message.error("Unauthorized access");
-        navigate("/login");
+        message.error(response.data.message || "Failed to fetch properties");
       }
     } catch (error) {
       console.log(error);
@@ -76,8 +75,7 @@ const OwnerAllProperties = () => {
         closeModal();
         fetchOwnerProperties();
       } else {
-        message.error(res.data.message || "Unauthorized access");
-        navigate("/login");
+        message.error(res.data.message || "Failed to save changes");
       }
     } catch (error) {
       console.log(error);
@@ -100,8 +98,7 @@ const OwnerAllProperties = () => {
           message.success(response.data.message);
           fetchOwnerProperties();
         } else {
-          message.error(response.data.message || "Unauthorized access");
-          navigate("/login");
+          message.error(response.data.message || "Failed to delete property");
         }
       } catch (error) {
         console.log(error);

@@ -13,7 +13,8 @@ const RenterAllProperty = () => {
 
       if (response.data.success) {
         setBookings(response.data.data);
-      } else {
+      } 
+      else {
         message.error(response.data.message);
         navigate("/login");
       }
@@ -40,7 +41,11 @@ const RenterAllProperty = () => {
             <th>Booking ID</th>
             <th>Property ID</th>
             <th>Tenant Name</th>
+            <th>Address</th>
             <th>Phone</th>
+            <th>Total Members</th>
+            <th>Female Members</th>
+            <th>Male Members</th>
             <th>Booking Status</th>
           </tr>
         </thead>
@@ -51,13 +56,17 @@ const RenterAllProperty = () => {
                 <td>{booking._id}</td>
                 <td>{booking.propertyId}</td>
                 <td>{booking.userName}</td>
+                <td>{booking.address || "-"}</td>
                 <td>{booking.phone}</td>
+                <td>{booking.memberCount ?? "-"}</td>
+                <td>{booking.femaleCount ?? "-"}</td>
+                <td>{booking.maleCount ?? "-"}</td>
                 <td>{booking.bookingStatus}</td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="5">No bookings found.</td>
+              <td colSpan="9">No bookings found.</td>
             </tr>
           )}
         </tbody>

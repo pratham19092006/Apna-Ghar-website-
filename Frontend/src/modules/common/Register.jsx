@@ -10,6 +10,7 @@ const Register = () => {
   const [formState, setFormState] = useState({
     name: "",
     email: "",
+    phone: "",
     password: "",
     type: "",
   });
@@ -26,7 +27,7 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formState.name || !formState.email || !formState.password || !formState.type) {
+    if (!formState.name || !formState.email || !formState.phone || !formState.password || !formState.type) {
       return showToast("error", "Please fill all fields");
     }
 
@@ -70,7 +71,7 @@ const Register = () => {
           <div className="mb-6">
             <p className="section-kicker">New Account</p>
             <h1 className="mt-2 text-3xl font-black text-slate-900">Create Your ApnaGhar Profile</h1>
-            <p className="mt-1 text-sm text-slate-500">Join as renter, owner, or admin and start using the platform instantly.</p>
+            <p className="mt-1 text-sm text-slate-500">Create a user or admin account. Renter/owner mode is selected from home.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
@@ -79,7 +80,7 @@ const Register = () => {
               name="name"
               value={formState.name}
               onChange={handleChange}
-              placeholder="Renter Full Name / Owner Name"
+              placeholder="Full Name"
               className="field md:col-span-2"
             />
             <input
@@ -98,6 +99,14 @@ const Register = () => {
               placeholder="Password"
               className="field"
             />
+            <input
+              type="tel"
+              name="phone"
+              value={formState.phone}
+              onChange={handleChange}
+              placeholder="Phone Number"
+              className="field"
+            />
 
             <select
               name="type"
@@ -105,10 +114,9 @@ const Register = () => {
               onChange={handleChange}
               className="field md:col-span-2"
             >
-              <option value="">Select User Type</option>
-              <option value="Renter">Renter</option>
-              <option value="Owner">Owner</option>
-              <option value="Admin">Admin</option>
+              <option value="">Select Account Type</option>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
             </select>
 
             <button type="submit" className="btn btn-primary md:col-span-2">
