@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { UserContext } from "../../../context/userContext";
 import AllPropertiesCards from "../AllPropertiesCards";
 import AllProperty from "./AllProperties";
-import { clearUserSession } from "../../common/uiHelpers";
+import { logoutUser } from "../../common/uiHelpers";
 import ApnaGharLogo from "../../common/ApnaGharLogo";
 
 const RenterHome = () => {
@@ -17,9 +17,8 @@ const RenterHome = () => {
 
   if (!session || !session.userData) return null;
 
-  const handleLogOut = () => {
-    clearUserSession();
-    navigate("/");
+  const handleLogOut = async () => {
+    await logoutUser(session, navigate, "/");
   };
 
   return (
@@ -27,7 +26,7 @@ const RenterHome = () => {
       <header className="top-nav">
         <ApnaGharLogo subtitle="Renter" />
         <div className="flex items-center gap-3">
-          <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-900">
+          <span className="hide-fullname-under-460 rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-900">
             {session.userData.name}
           </span>
           <button onClick={handleLogOut} className="btn btn-danger text-sm">

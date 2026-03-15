@@ -6,7 +6,7 @@ import OwnerAllProperties from "./AllProperties";
 import OwnerAllBookings from "./AllBookings";
 import AllPropertiesCards from "../AllPropertiesCards";
 import RenterBookingHistory from "../renter/AllProperties";
-import { clearUserSession } from "../../common/uiHelpers";
+import { logoutUser } from "../../common/uiHelpers";
 import ApnaGharLogo from "../../common/ApnaGharLogo";
 
 const USER_TABS = [
@@ -28,9 +28,8 @@ const OwnerHome = () => {
     return null;
   }
 
-  const handleLogOut = () => {
-    clearUserSession();
-    navigate("/login");
+  const handleLogOut = async () => {
+    await logoutUser(session, navigate, "/login");
   };
 
   const activePanel = USER_TABS.find((tab) => tab.key === activeTab)?.panel;
@@ -40,7 +39,7 @@ const OwnerHome = () => {
       <header className="top-nav">
         <ApnaGharLogo subtitle="Owner" />
         <div className="flex items-center gap-3">
-          <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-900">
+          <span className="hide-fullname-under-460 rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-900">
             {session.userData.name}
           </span>
           <button onClick={handleLogOut} className="btn btn-danger text-sm">

@@ -57,6 +57,28 @@ a {
 	text-decoration: none;
 }
 
+a,
+button,
+[role="button"],
+summary,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="checkbox"],
+input[type="radio"],
+select,
+.nav-action {
+	cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[aria-disabled="true"] {
+	cursor: not-allowed;
+}
+
 .app-shell {
 	min-height: 100vh;
 	padding-top: 0rem;
@@ -465,28 +487,52 @@ a {
 
 @media (max-width: 768px) {
 	.top-nav {
-		flex-direction: column;
+		flex-direction: row;
 		align-items: center;
-		justify-content: center;
-		gap: 0.6rem;
-		padding: 0.75rem 0.8rem;
+		justify-content: space-between;
+		gap: 0.45rem;
+		padding: 0.62rem 0.7rem;
 		width: 95%;
 		margin-top: 0.45rem;
 		backdrop-filter: none;
+		overflow-x: auto;
+		white-space: nowrap;
+	}
+
+	.apn-ghar-logo {
+		flex: 1 1 auto;
+		min-width: 0;
 	}
 
 	.apn-ghar-svg {
-		width: 212px;
-		height: 54px;
+		width: clamp(140px, 36vw, 190px);
+		height: 48px;
 	}
 
 	.top-nav > :last-child {
-		width: 100%;
-		flex-wrap: wrap;
+		width: auto;
+		flex-wrap: nowrap;
+		gap: 0.4rem;
+		flex-shrink: 0;
+	}
+
+	.top-nav > :last-child > * {
+		white-space: nowrap;
+	}
+
+	.nav-action {
+		padding: 0.42rem 0.68rem;
+		font-size: 0.77rem;
 	}
 
 	.hero-select-wrap {
 		max-width: 100%;
 		min-width: 100%;
+	}
+}
+
+@media (max-width: 460px) {
+	.hide-fullname-under-460 {
+		display: none !important;
 	}
 }

@@ -31,15 +31,34 @@ const AllPropertiesCards = ({
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [focusedProperty, setFocusedProperty] = useState(null);
   const [userDetails, setUserDetails] = useState(initialUserDetails);
-  const [otpCode, setOtpCode] = useState("");
-  const [otpRequested, setOtpRequested] = useState(false);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [bookingFeeAccepted, setBookingFeeAccepted] = useState(false);
+  const [bookingInProgress, setBookingInProgress] = useState(false);
+  const [phonePePaymentInitiated, setPhonePePaymentInitiated] = useState(false);
+  const [phonePePaymentIntentRef, setPhonePePaymentIntentRef] = useState("");
   const [toast, setToast] = useState({ show: false, type: "", message: "" });
 
   const showToast = (type, message) => {
     setToast({ show: true, type, message });
+  };
+
+  const getOwnerContactForDisplay = (ownerContact = "", propertyAdType = "") => {
+    const adType = String(propertyAdType || "").trim().toLowerCase();
+    const contact = String(ownerContact || "").trim();
+
+    if (adType !== "rent") {
+      return contact;
+    }
+
+    const digits = contact.replace(/\D/g, "");
+    if (!digits) {
+      return contact;
+    }
+
+    if (digits.length <= 6) {
+      return "*".repeat(digits.length);
+    }
+
+    return `${"*".repeat(6)}${digits.slice(6)}`;
   };
 
   const fetchProperties = async () => {
@@ -52,24 +71,82 @@ const AllPropertiesCards = ({
   };
 
   const handleBooking = async (status, propertyId) => {
-    try {
-      const userDataRes = await http.post("/api/user/getuserdata");
-      const authenticatedUser = userDataRes.data?.data;
+    const isRentBooking =
+      String(focusedProperty?.propertyAdType || "").trim().toLowerCase() === "rent";
 
-      if (!authenticatedUser?.phoneVerified) {
-        return showToast(
-          "error",
-          "Please verify your phone number first using Send OTP and Verify"
-        );
+    if (isRentBooking && !bookingFeeAccepted) {
+      return showToast(
+        "error",
+        "Please accept the Rs 50 booking amount note before booking"
+      );
+    }
+
+    try {
+      setBookingInProgress(true);
+      let paymentPayload = {
+        bookingFeeAccepted: isRentBooking ? bookingFeeAccepted : false,
+      };
+
+      if (isRentBooking) {
+        if (!phonePePaymentInitiated) {
+          const intentResponse = await http.post(
+            `/api/user/create-phonepe-payment-intent/${propertyId}`
+          );
+
+          if (!intentResponse.data?.success) {
+            showToast("error", intentResponse.data?.message || "Unable to start payment");
+            return;
+          }
+
+          const upiUrl = intentResponse.data?.upiUrl;
+          const isMobileDevice = /Android|iPhone|iPad|iPod|Windows Phone/i.test(
+            navigator.userAgent
+          );
+
+          setPhonePePaymentInitiated(true);
+          setPhonePePaymentIntentRef(intentResponse.data?.transactionRef || "");
+
+          if (upiUrl && isMobileDevice) {
+            window.location.href = upiUrl;
+            showToast(
+              "success",
+              "PhonePe opened. After payment, return here and click Pay Rs 50 & Book Property again."
+            );
+          } else if (upiUrl) {
+            try {
+              await navigator.clipboard.writeText(upiUrl);
+              showToast(
+                "success",
+                "Desktop detected: UPI link copied. Complete payment in PhonePe app, then click Pay Rs 50 & Book Property again."
+              );
+            } catch {
+              showToast(
+                "error",
+                `Desktop detected: pay Rs 50 to ${intentResponse.data?.upiId || "merchant UPI"}, then click Pay Rs 50 & Book Property again.`
+              );
+            }
+          }
+
+          return;
+        }
+
+        paymentPayload = {
+          bookingFeeAccepted: true,
+          paymentMethod: "phonepe",
+          paymentIntentRef: phonePePaymentIntentRef,
+        };
       }
 
       const res = await http.post(`/api/user/bookinghandle/${propertyId}`, {
         userDetails,
         status,
+        ...paymentPayload,
       });
 
       if (res.data.success) {
         showToast("success", res.data.message);
+        setPhonePePaymentInitiated(false);
+        setPhonePePaymentIntentRef("");
         setBookingModalOpen(false);
       } else {
         showToast("error", res.data.message);
@@ -78,6 +155,8 @@ const AllPropertiesCards = ({
       console.log(error);
       const serverMessage = error?.response?.data?.message;
       showToast("error", serverMessage || "Booking failed");
+    } finally {
+      setBookingInProgress(false);
     }
   };
 
@@ -101,60 +180,6 @@ const AllPropertiesCards = ({
 
     onAutoOpenHandled();
   }, [autoOpenPropertyId, loggedIn, onAutoOpenHandled, properties]);
-
-  const requestOtp = async () => {
-    const phone = String(userDetails.phone || "").trim();
-
-    if (!phone) {
-      return showToast("error", "Please enter phone number first");
-    }
-
-    try {
-      setOtpSending(true);
-      const otpRequestRes = await http.post("/api/user/request-phone-otp", { phone });
-
-      if (!otpRequestRes.data?.success) {
-        return showToast("error", otpRequestRes.data?.message || "OTP request failed");
-      }
-
-      setOtpRequested(true);
-      showToast("success", otpRequestRes.data?.message || "OTP sent successfully");
-
-      if (otpRequestRes.data?.demoOtp) {
-        showToast("success", `Demo OTP: ${otpRequestRes.data.demoOtp}`);
-      }
-    } catch (error) {
-      showToast("error", error.response?.data?.message || "OTP request failed");
-    } finally {
-      setOtpSending(false);
-    }
-  };
-
-  const verifyOtp = async () => {
-    const otp = String(otpCode || "").trim();
-
-    if (!otp) {
-      return showToast("error", "Please enter OTP");
-    }
-
-    try {
-      setOtpVerifying(true);
-      const otpVerifyRes = await http.post("/api/user/verify-phone-otp", { otp });
-
-      if (!otpVerifyRes.data?.success) {
-        return showToast("error", otpVerifyRes.data?.message || "OTP verification failed");
-      }
-
-      setIsPhoneVerified(true);
-      setOtpRequested(false);
-      setOtpCode("");
-      showToast("success", otpVerifyRes.data?.message || "Phone verified successfully");
-    } catch (error) {
-      showToast("error", error.response?.data?.message || "OTP verification failed");
-    } finally {
-      setOtpVerifying(false);
-    }
-  };
 
   const filteredProperties = properties
     .filter(
@@ -181,13 +206,13 @@ const AllPropertiesCards = ({
 
   const openBookingModal = (property) => {
     setFocusedProperty(property);
+    setBookingFeeAccepted(false);
+    setPhonePePaymentInitiated(false);
+    setPhonePePaymentIntentRef("");
     setUserDetails((prev) => ({
       ...initialUserDetails,
       phone: currentUser?.phone || prev.phone,
     }));
-    setOtpCode("");
-    setOtpRequested(false);
-    setIsPhoneVerified(Boolean(currentUser?.phoneVerified));
     setBookingModalOpen(true);
   };
 
@@ -265,7 +290,11 @@ const AllPropertiesCards = ({
                 {loggedIn && (
                   <>
                     <p className="text-sm text-slate-700">
-                      <b>Owner:</b> {property.ownerContact}
+                      <b>Owner:</b>{" "}
+                      {getOwnerContactForDisplay(
+                        property.ownerContact,
+                        property.propertyAdType
+                      )}
                     </p>
                     <p className="text-sm text-slate-700">
                       <b>Availability:</b> {property.isAvailable}
@@ -308,7 +337,7 @@ const AllPropertiesCards = ({
       </div>
 
       {bookingModalOpen && focusedProperty && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/50 p-4">
           <div className="card relative w-full max-w-2xl max-h-[88vh] overflow-y-auto p-6">
             <button
               onClick={() => setBookingModalOpen(false)}
@@ -325,7 +354,11 @@ const AllPropertiesCards = ({
             <div className="grid gap-4 text-sm text-slate-700 md:grid-cols-2">
               <div>
                 <p>
-                  <b>Owner Contact:</b> {focusedProperty.ownerContact}
+                  <b>Owner Contact:</b>{" "}
+                  {getOwnerContactForDisplay(
+                    focusedProperty.ownerContact,
+                    focusedProperty.propertyAdType
+                  )}
                 </p>
                 <p>
                   <b>Availability:</b> {focusedProperty.isAvailable}
@@ -349,12 +382,23 @@ const AllPropertiesCards = ({
             <p className="mt-2 text-sm text-slate-700">
               <b>Additional Info:</b> {focusedProperty.additionalInfo}
             </p>
+            {String(focusedProperty.propertyAdType || "").trim().toLowerCase() ===
+              "rent" && (
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                <p>
+                  A minimal booking amount of <b>Rs 50</b> is required to book this rental home.
+                </p>
+                <p className="mt-1">
+                  If the home is not finally rented, this amount will be refunded.
+                </p>
+              </div>
+            )}
 
             <form
               className="mt-4 space-y-2"
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
-                handleBooking("pending", focusedProperty._id);
+                await handleBooking("pending", focusedProperty._id);
               }}
             >
               <input
@@ -385,41 +429,12 @@ const AllPropertiesCards = ({
                   name="phone"
                   placeholder="Phone Number"
                   required
-                  className="field flex-1"
+                  className="field"
                   value={userDetails.phone}
-                  onChange={(e) => {
-                    setUserDetails({ ...userDetails, phone: e.target.value });
-                    setIsPhoneVerified(false);
-                  }}
+                  onChange={(e) =>
+                    setUserDetails({ ...userDetails, phone: e.target.value })
+                  }
                 />
-                <button
-                  type="button"
-                  className="btn btn-warn"
-                  onClick={requestOtp}
-                  disabled={otpSending || isPhoneVerified}
-                >
-                  {isPhoneVerified ? "Verified" : otpSending ? "Sending..." : "Send OTP"}
-                </button>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  name="otp"
-                  placeholder="Enter 4-digit OTP"
-                  className="field flex-1"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
-                  maxLength={4}
-                  disabled={isPhoneVerified}
-                />
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={verifyOtp}
-                  disabled={otpVerifying || isPhoneVerified || !otpRequested}
-                >
-                  {otpVerifying ? "Verifying..." : "Verify"}
-                </button>
               </div>
               <input
                 type="number"
@@ -459,8 +474,30 @@ const AllPropertiesCards = ({
                   }
                 />
               </div>
+              {String(focusedProperty.propertyAdType || "").trim().toLowerCase() ===
+                "rent" && (
+                <label className="flex items-start gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={bookingFeeAccepted}
+                    onChange={(e) => setBookingFeeAccepted(e.target.checked)}
+                    className="mt-1"
+                    required
+                  />
+                  <span>
+                    I agree to pay the minimal booking amount of <b>Rs 50</b>. If the home is
+                    not finally rented, this amount will be refunded.
+                  </span>
+                </label>
+              )}
               <button type="submit" className="btn btn-primary w-full">
-                Book Property
+                {bookingInProgress
+                  ? "Processing..."
+                  : String(focusedProperty.propertyAdType || "")
+                      .trim()
+                      .toLowerCase() === "rent"
+                  ? "Pay Rs 50 & Book Property"
+                  : "Book Property"}
               </button>
             </form>
           </div>

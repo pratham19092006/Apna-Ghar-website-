@@ -4,7 +4,7 @@ import { UserContext } from "../../context/userContext";
 import AllUsers from "./AllUsers";
 import AllProperty from "./AllProperty";
 import AllBookings from "./AllBookings";
-import { clearUserSession } from "../common/uiHelpers";
+import { logoutUser } from "../common/uiHelpers";
 import ApnaGharLogo from "../common/ApnaGharLogo";
 
 const ADMIN_TABS = [
@@ -18,9 +18,8 @@ const AdminHome = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("users");
 
-  const handleLogOut = () => {
-    clearUserSession();
-    navigate("/login");
+  const handleLogOut = async () => {
+    await logoutUser(session, navigate, "/login");
   };
 
   if (!session || !session.userData) return null;
@@ -32,7 +31,7 @@ const AdminHome = () => {
       <header className="top-nav">
         <ApnaGharLogo subtitle="Admin" />
         <div className="flex items-center gap-3">
-          <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-900">
+          <span className="hide-fullname-under-460 rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-900">
             {session.userData.name}
           </span>
           <button onClick={handleLogOut} className="btn btn-danger text-sm">

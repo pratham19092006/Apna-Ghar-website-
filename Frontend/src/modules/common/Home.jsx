@@ -7,6 +7,7 @@ import p4 from "../../images/p4.jpg";
 import ApnaGharLogo from "./ApnaGharLogo";
 import http, { API_BASE_URL } from "./http";
 import { UserContext } from "../../context/userContext";
+import { logoutUser } from "./uiHelpers";
 
 const images = [p1, p2, p3, p4];
 
@@ -138,13 +139,9 @@ const Home = () => {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [accountMenuOpen]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
+  const handleLogout = async () => {
     setAccountMenuOpen(false);
-    if (session) {
-      session.setUserData(null);
-      session.setUserLoggedIn(false);
-    }
+    await logoutUser(session, navigate, "/");
   };
 
   const handleHeroContinue = () => {
@@ -172,6 +169,26 @@ const Home = () => {
     navigate("/login");
   };
 
+  const getOwnerContactForDisplay = (ownerContact = "", propertyAdType = "") => {
+    const adType = String(propertyAdType || "").trim().toLowerCase();
+    const contact = String(ownerContact || "").trim();
+
+    if (adType !== "rent") {
+      return contact;
+    }
+
+    const digits = contact.replace(/\D/g, "");
+    if (!digits) {
+      return contact;
+    }
+
+    if (digits.length <= 6) {
+      return "*".repeat(digits.length);
+    }
+
+    return `${"*".repeat(6)}${digits.slice(6)}`;
+  };
+
   return (
     <div className="app-shell">
       <nav className="top-nav">
@@ -187,7 +204,7 @@ const Home = () => {
             >
               {userInitial}
             </button>
-            <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+            <span className="hide-fullname-under-460 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
               {session.userData.name}
             </span>
             <Link className="nav-action" to={dashboardPath}>
@@ -203,7 +220,7 @@ const Home = () => {
                 className="absolute right-0 top-12 z-50 w-[320px] rounded-2xl border border-indigo-100 bg-white/95 p-4 shadow-2xl backdrop-blur"
               >
                 <p className="section-kicker">Account Details</p>
-                <h4 className="mt-1 text-base font-extrabold text-slate-900">{session.userData.name}</h4>
+                <h4 className="hide-fullname-under-460 mt-1 text-base font-extrabold text-slate-900">{session.userData.name}</h4>
                 <div className="mt-3 space-y-2 text-sm">
                   {accountDetails.map((detail) => (
                     <div key={detail.key} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
@@ -424,7 +441,11 @@ const Home = () => {
                           {property.isAvailable}
                         </p>
                         <p className="text-sm text-slate-700">
-                          <b>Owner Contact:</b> {property.ownerContact || "Available after login"}
+                          <b>Owner Contact:</b>{" "}
+                          {getOwnerContactForDisplay(
+                            property.ownerContact || "Available after login",
+                            property.propertyAdType
+                          )}
                         </p>
                         {isOwnProperty ? (
                           <p className="mt-2 text-xs font-semibold text-slate-500">

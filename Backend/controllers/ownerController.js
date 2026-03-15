@@ -19,13 +19,6 @@ const addPropertyController = async (req, res) => {
         .send({ success: false, message: "User not found" });
     }
 
-    if (!owner.phoneVerified) {
-      return res.status(403).send({
-        success: false,
-        message: "Please verify your phone number with OTP before posting property",
-      });
-    }
-
     const propertyEntry = new PropertyModel({
       ...req.body,
       propertyImage: images,

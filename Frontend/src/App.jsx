@@ -16,6 +16,7 @@ import OwnerAllProperties from "./modules/user/owner/AllProperties";
 import AllPropertiesCards from "./modules/user/AllPropertiesCards";
 import { useEffect, useState } from "react";
 import { UserContext } from "./context/userContext";
+import ErrorBoundary from "./modules/common/ErrorBoundary";
 
 const readPersistedUser = () => {
   try {
@@ -43,25 +44,27 @@ function App() {
     <UserContext.Provider
       value={{ userData, setUserData, userLoggedIn, setUserLoggedIn }}
     >
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgotpassword" element={<ForgotPassword />} />
-          <Route path="/adminhome" element={<AdminHome />} />
-          <Route path="/ownerhome" element={<OwnerHome />} />
-          <Route path="/renterhome" element={<RenterHome />} />
-          <Route path="/getallbookings" element={<AdminAllBookings />} />
-          <Route path="/getallproperties" element={<AdminAllProperty />} />
-          <Route path="/getallusers" element={<AllUsers />} />
-          <Route path="/postproperty" element={<AddProperty />} />
-          <Route path="/getallbookings" element={<OwnerAllBookings />} />
-          <Route path="/getallproperties" element={<OwnerAllProperties />} />
-          <Route path="/getallbookings" element={<RenterAllProperty />} />
-          <Route path="/getAllProperties" element={<AllPropertiesCards />} />
-        </Routes>
-      </BrowserRouter>
+      <ErrorBoundary>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgotpassword" element={<ForgotPassword />} />
+            <Route path="/adminhome" element={<AdminHome />} />
+            <Route path="/ownerhome" element={<OwnerHome />} />
+            <Route path="/renterhome" element={<RenterHome />} />
+            <Route path="/getallbookings" element={<AdminAllBookings />} />
+            <Route path="/getallproperties" element={<AdminAllProperty />} />
+            <Route path="/getallusers" element={<AllUsers />} />
+            <Route path="/postproperty" element={<AddProperty />} />
+            <Route path="/getallbookings" element={<OwnerAllBookings />} />
+            <Route path="/getallproperties" element={<OwnerAllProperties />} />
+            <Route path="/getallbookings" element={<RenterAllProperty />} />
+            <Route path="/getAllProperties" element={<AllPropertiesCards />} />
+          </Routes>
+        </BrowserRouter>
+      </ErrorBoundary>
     </UserContext.Provider>
   );
 }

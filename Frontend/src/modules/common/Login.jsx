@@ -44,33 +44,7 @@ const Login = () => {
         showToast("success", res.data.message);
 
         setTimeout(() => {
-          const preferredMode = localStorage.getItem("preferredMode") || "owner";
-          const pendingBookingPropertyId = localStorage.getItem("pendingBookingPropertyId");
-          const normalizedType = String(signedInUser.type || "").toLowerCase();
-          const accountType =
-            normalizedType === "admin"
-              ? "admin"
-              : ["user", "owner", "renter"].includes(normalizedType)
-                ? "user"
-                : normalizedType;
-
-          switch (accountType) {
-            case "admin":
-              navigate("/adminhome");
-              break;
-            case "user":
-              if (pendingBookingPropertyId) {
-                localStorage.removeItem("pendingBookingPropertyId");
-                navigate("/renterhome", {
-                  state: { openBookingPropertyId: pendingBookingPropertyId },
-                });
-              } else {
-                navigate(preferredMode === "renter" ? "/renterhome" : "/ownerhome");
-              }
-              break;
-            default:
-              navigate("/");
-          }
+          navigate("/");
         }, 650);
       } else {
         showToast("error", res.data.message);

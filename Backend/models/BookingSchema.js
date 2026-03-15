@@ -46,6 +46,42 @@ const bookingModel = mongoose.Schema(
       type: String,
       required: [true, "Please provide a booking Type"],
     },
+    bookingFeeAmount: {
+      type: Number,
+      default: 0,
+    },
+    bookingFeeStatus: {
+      type: String,
+      default: "not-applicable",
+    },
+    refundPolicyNote: {
+      type: String,
+      default: "",
+    },
+    razorpayOrderId: {
+      type: String,
+      default: "",
+    },
+    razorpayPaymentId: {
+      type: String,
+      default: "",
+    },
+    paymentVerified: {
+      type: Boolean,
+      default: false,
+    },
+    paymentMethod: {
+      type: String,
+      default: "",
+    },
+    paymentReference: {
+      type: String,
+      default: "",
+    },
+    paymentIntentRef: {
+      type: String,
+      default: "",
+    },
   },
   {
     strict: false,

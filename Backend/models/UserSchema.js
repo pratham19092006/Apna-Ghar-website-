@@ -11,6 +11,12 @@ const userModel = mongoose.Schema({
   email: {
     type: String,
     required: [true, "email is required"],
+    lowercase: true,
+    trim: true,
+  },
+  emailVerified: {
+    type: Boolean,
+    default: false,
   },
   phone: {
     type: String,
@@ -20,18 +26,6 @@ const userModel = mongoose.Schema({
   password: {
     type: String,
     required: [true, "password is required"],
-  },
-  phoneVerified: {
-    type: Boolean,
-    default: false,
-  },
-  phoneOtpCode: {
-    type: String,
-    default: null,
-  },
-  phoneOtpExpiresAt: {
-    type: Date,
-    default: null,
   },
   type: {
     type: String,

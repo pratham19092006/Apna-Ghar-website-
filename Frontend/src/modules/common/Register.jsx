@@ -7,6 +7,12 @@ import ApnaGharLogo from "./ApnaGharLogo";
 const Register = () => {
   const navigate = useNavigate();
   const [toast, setToast] = useState({ show: false, type: "", message: "" });
+  const [emailOtpCode, setEmailOtpCode] = useState("");
+  const [emailOtpRequested, setEmailOtpRequested] = useState(false);
+  const [emailOtpSending, setEmailOtpSending] = useState(false);
+  const [emailOtpVerifying, setEmailOtpVerifying] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [emailVerificationToken, setEmailVerificationToken] = useState("");
   const [formState, setFormState] = useState({
     name: "",
     email: "",
@@ -22,6 +28,71 @@ const Register = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormState((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "email") {
+      setEmailOtpCode("");
+      setEmailOtpRequested(false);
+      setEmailOtpSending(false);
+      setEmailOtpVerifying(false);
+      setIsEmailVerified(false);
+      setEmailVerificationToken("");
+    }
+  };
+
+  const handleRequestEmailOtp = async () => {
+    const email = String(formState.email || "").trim();
+
+    if (!email) {
+      return showToast("error", "Please enter your email first");
+    }
+
+    setEmailOtpSending(true);
+    try {
+      const response = await http.post("/api/user/request-email-otp", { email });
+
+      if (response.data?.success) {
+        setEmailOtpRequested(true);
+        setIsEmailVerified(false);
+        setEmailVerificationToken("");
+        showToast("success", response.data.message || "OTP sent to your email");
+      } else {
+        showToast("error", response.data?.message || "Failed to send email OTP");
+      }
+    } catch (error) {
+      showToast("error", error.response?.data?.message || "Failed to send email OTP");
+    } finally {
+      setEmailOtpSending(false);
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    const email = String(formState.email || "").trim();
+    const otp = String(emailOtpCode || "").trim();
+
+    if (!email) {
+      return showToast("error", "Please enter your email first");
+    }
+
+    if (!otp) {
+      return showToast("error", "Please enter the email OTP");
+    }
+
+    setEmailOtpVerifying(true);
+    try {
+      const response = await http.post("/api/user/verify-email-otp", { email, otp });
+
+      if (response.data?.success) {
+        setIsEmailVerified(true);
+        setEmailVerificationToken(response.data?.emailVerificationToken || "");
+        showToast("success", response.data.message || "Email verified successfully");
+      } else {
+        showToast("error", response.data?.message || "Email OTP verification failed");
+      }
+    } catch (error) {
+      showToast("error", error.response?.data?.message || "Email OTP verification failed");
+    } finally {
+      setEmailOtpVerifying(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -31,12 +102,20 @@ const Register = () => {
       return showToast("error", "Please fill all fields");
     }
 
+    if (!isEmailVerified || !emailVerificationToken) {
+      return showToast("error", "Please verify your email with OTP before registering");
+    }
+
     try {
-      const response = await http.post("/api/user/register", formState);
+      const response = await http.post("/api/user/register", {
+        ...formState,
+        phone: formState.phone,
+        emailVerificationToken,
+      });
 
       if (response.data.success) {
         showToast("success", response.data.message);
-        setTimeout(() => navigate("/login"), 1000);
+        setTimeout(() => navigate("/"), 1000);
       } else {
         showToast("error", response.data.message);
       }
@@ -90,14 +169,39 @@ const Register = () => {
               onChange={handleChange}
               placeholder="Email Address"
               className="field"
+              disabled={isEmailVerified}
             />
+            <button
+              type="button"
+              onClick={handleRequestEmailOtp}
+              disabled={emailOtpSending || isEmailVerified}
+              className="btn btn-primary"
+            >
+              {isEmailVerified ? "Verified" : emailOtpSending ? "Sending..." : "Send Email OTP"}
+            </button>
+            <input
+              type="text"
+              value={emailOtpCode}
+              onChange={(e) => setEmailOtpCode(e.target.value)}
+              placeholder="Enter Email OTP"
+              className="field"
+              disabled={isEmailVerified}
+            />
+            <button
+              type="button"
+              onClick={handleVerifyEmailOtp}
+              disabled={emailOtpVerifying || isEmailVerified || !emailOtpRequested}
+              className="btn btn-primary"
+            >
+              {emailOtpVerifying ? "Verifying..." : "Verify Email OTP"}
+            </button>
             <input
               type="password"
               name="password"
               value={formState.password}
               onChange={handleChange}
               placeholder="Password"
-              className="field"
+              className="field md:col-span-2"
             />
             <input
               type="tel"
@@ -105,7 +209,7 @@ const Register = () => {
               value={formState.phone}
               onChange={handleChange}
               placeholder="Phone Number"
-              className="field"
+              className="field md:col-span-2"
             />
 
             <select
@@ -119,9 +223,7 @@ const Register = () => {
               <option value="admin">Admin</option>
             </select>
 
-            <button type="submit" className="btn btn-primary md:col-span-2">
-              Register
-            </button>
+            <button type="submit" className="btn btn-primary md:col-span-2">Register</button>
           </form>
 
           <p className="mt-4 text-sm text-slate-600">

@@ -27,53 +27,6 @@ function AddProperty() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      const userDataRes = await http.post("/api/user/getuserdata");
-      const currentUser = userDataRes.data?.data;
-
-      if (!currentUser?.phoneVerified) {
-        const phoneInput = window.prompt(
-          "Enter phone number to receive OTP",
-          currentUser?.phone || ""
-        );
-
-        if (!phoneInput) {
-          return message.error("Phone verification is required before posting property");
-        }
-
-        const otpRequestRes = await http.post("/api/user/request-phone-otp", {
-          phone: phoneInput,
-        });
-
-        if (!otpRequestRes.data?.success) {
-          return message.error(otpRequestRes.data?.message || "OTP request failed");
-        }
-
-        if (otpRequestRes.data?.demoOtp) {
-          message.info(`Demo OTP: ${otpRequestRes.data.demoOtp}`);
-        }
-
-        const otpInput = window.prompt("Enter the 4-digit OTP sent to your phone");
-
-        if (!otpInput) {
-          return message.error("OTP verification is required before posting property");
-        }
-
-        const otpVerifyRes = await http.post("/api/user/verify-phone-otp", {
-          otp: otpInput,
-        });
-
-        if (!otpVerifyRes.data?.success) {
-          return message.error(otpVerifyRes.data?.message || "OTP verification failed");
-        }
-      }
-    } catch (verificationError) {
-      console.error("OTP verification error:", verificationError);
-      return message.error(
-        verificationError.response?.data?.message || "Phone verification failed"
-      );
-    }
-
     const formData = new FormData();
     Object.entries(propertyDetails).forEach(([key, value]) => {
       formData.append(key, value);
