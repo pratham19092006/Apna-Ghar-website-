@@ -18,7 +18,7 @@ const formatServerError = (res, error) =>
 const EMAIL_OTP_EXPIRY_MINUTES = 10;
 const EMAIL_OTP_COOLDOWN_SECONDS = 60;
 const EMAIL_VERIFICATION_TOKEN_VALIDITY_MINUTES = 30;
-const RENT_BOOKING_FEE_RUPEES = 50;
+const RENT_BOOKING_FEE_RUPEES = 2;
 
 const normalizeEmail = (email = "") => String(email || "").trim().toLowerCase();
 
@@ -519,7 +519,7 @@ const createPhonePePaymentIntentController = async (req, res) => {
     }
 
     const transactionRef = `AGHAR${Date.now()}${Math.floor(Math.random() * 1000)}`;
-    const note = "Rental booking fee";
+    const note = "Booking confirmation charges";
     const upiUrl =
       `upi://pay?pa=${encodeURIComponent(upiId)}` +
       `&pn=${encodeURIComponent(merchantName)}` +
@@ -617,7 +617,7 @@ const bookingHandleController = async (req, res) => {
       return res.status(400).send({
         success: false,
         message:
-          "To book a rental home, please accept the Rs 50 booking amount with refund policy note",
+          `To book a rental home, please accept the Rs ${RENT_BOOKING_FEE_RUPEES} booking amount with refund policy note`,
       });
     }
 

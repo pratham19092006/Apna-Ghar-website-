@@ -194,7 +194,7 @@ const Home = () => {
       <nav className="top-nav">
         <ApnaGharLogo />
         {session?.userLoggedIn && session?.userData ? (
-          <div className="relative flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
+          <div className="relative flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700 account-nav-group">
             <button
               ref={accountButtonRef}
               type="button"
@@ -217,10 +217,10 @@ const Home = () => {
             {accountMenuOpen ? (
               <section
                 ref={accountPanelRef}
-                className="absolute right-0 top-12 z-50 w-[320px] rounded-2xl border border-indigo-100 bg-white/95 p-4 shadow-2xl backdrop-blur"
+                className="account-details-panel absolute right-0 top-12 z-50 w-[320px] rounded-2xl border border-indigo-100 bg-white/95 p-4 shadow-2xl backdrop-blur"
               >
                 <p className="section-kicker">Account Details</p>
-                <h4 className="hide-fullname-under-460 mt-1 text-base font-extrabold text-slate-900">{session.userData.name}</h4>
+                <h4 className="mt-1 text-base font-extrabold text-slate-900">{session.userData.name}</h4>
                 <div className="mt-3 space-y-2 text-sm">
                   {accountDetails.map((detail) => (
                     <div key={detail.key} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">

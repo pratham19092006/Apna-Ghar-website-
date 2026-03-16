@@ -535,4 +535,23 @@ textarea:disabled,
 	.hide-fullname-under-460 {
 		display: none !important;
 	}
+
+	.top-nav {
+		overflow-x: visible;
+	}
+
+	.account-nav-group {
+		position: static;
+	}
+
+	.account-details-panel {
+		position: fixed;
+		top: 5.2rem;
+		left: 0.75rem;
+		right: 0.75rem;
+		width: auto;
+		max-width: none;
+		max-height: calc(100vh - 6rem);
+		overflow-y: auto;
+	}
 }

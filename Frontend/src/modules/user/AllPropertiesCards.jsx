@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import Toast from "../common/Toast";
 import http, { API_BASE_URL } from "../common/http";
 
+const RENT_BOOKING_FEE_RUPEES = 2;
+
 const AllPropertiesCards = ({
   loggedIn,
   autoOpenPropertyId = "",
@@ -77,7 +79,7 @@ const AllPropertiesCards = ({
     if (isRentBooking && !bookingFeeAccepted) {
       return showToast(
         "error",
-        "Please accept the Rs 50 booking amount note before booking"
+        `Please accept the Rs ${RENT_BOOKING_FEE_RUPEES} booking amount note before booking`
       );
     }
 
@@ -110,19 +112,19 @@ const AllPropertiesCards = ({
             window.location.href = upiUrl;
             showToast(
               "success",
-              "PhonePe opened. After payment, return here and click Pay Rs 50 & Book Property again."
+              `PhonePe opened. After payment, return here and click Pay Rs ${RENT_BOOKING_FEE_RUPEES} & Confirm Booking again.`
             );
           } else if (upiUrl) {
             try {
               await navigator.clipboard.writeText(upiUrl);
               showToast(
                 "success",
-                "Desktop detected: UPI link copied. Complete payment in PhonePe app, then click Pay Rs 50 & Book Property again."
+                `Desktop detected: UPI link copied. Complete payment in PhonePe app, then click Pay Rs ${RENT_BOOKING_FEE_RUPEES} & Confirm Booking again.`
               );
             } catch {
               showToast(
                 "error",
-                `Desktop detected: pay Rs 50 to ${intentResponse.data?.upiId || "merchant UPI"}, then click Pay Rs 50 & Book Property again.`
+                `Desktop detected: pay Rs ${RENT_BOOKING_FEE_RUPEES} to ${intentResponse.data?.upiId || "merchant UPI"}, then click Pay Rs ${RENT_BOOKING_FEE_RUPEES} & Confirm Booking again.`
               );
             }
           }
@@ -386,7 +388,7 @@ const AllPropertiesCards = ({
               "rent" && (
               <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                 <p>
-                  A minimal booking amount of <b>Rs 50</b> is required to book this rental home.
+                  A minimal booking amount of <b>Rs {RENT_BOOKING_FEE_RUPEES}</b> is required to confirm this renting.
                 </p>
                 <p className="mt-1">
                   If the home is not finally rented, this amount will be refunded.
@@ -485,7 +487,7 @@ const AllPropertiesCards = ({
                     required
                   />
                   <span>
-                    I agree to pay the minimal booking amount of <b>Rs 50</b>. If the home is
+                    I agree to pay the minimal amount of <b>Rs {RENT_BOOKING_FEE_RUPEES}</b> to confirm this room. If the home is
                     not finally rented, this amount will be refunded.
                   </span>
                 </label>
@@ -496,7 +498,7 @@ const AllPropertiesCards = ({
                   : String(focusedProperty.propertyAdType || "")
                       .trim()
                       .toLowerCase() === "rent"
-                  ? "Pay Rs 50 & Book Property"
+                  ? `Pay Rs ${RENT_BOOKING_FEE_RUPEES} & Confirm Booking`
                   : "Book Property"}
               </button>
             </form>
