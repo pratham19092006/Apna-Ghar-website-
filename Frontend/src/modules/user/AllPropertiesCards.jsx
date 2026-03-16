@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Toast from "../common/Toast";
 import http, { API_BASE_URL } from "../common/http";
 
-const RENT_BOOKING_FEE_RUPEES = 2;
+const RENT_BOOKING_FEE_RUPEES = 50;
 
 const AllPropertiesCards = ({
   loggedIn,
