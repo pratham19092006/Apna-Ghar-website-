@@ -3,9 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import Toast from "../common/Toast";
 import http from "./http";
 import ApnaGharLogo from "./ApnaGharLogo";
+import { useContext } from "react";
+import { UserContext } from "../../context/userContext";
 
 const Register = () => {
   const navigate = useNavigate();
+  const session = useContext(UserContext);
   const [toast, setToast] = useState({ show: false, type: "", message: "" });
   const [emailOtpCode, setEmailOtpCode] = useState("");
   const [emailOtpRequested, setEmailOtpRequested] = useState(false);
@@ -98,7 +101,7 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formState.name || !formState.email || !formState.phone || !formState.password || !formState.type) {
+    if (!formState.name || !formState.email || !formState.phone || !formState.password) {
       return showToast("error", "Please fill all fields");
     }
 
@@ -110,12 +113,48 @@ const Register = () => {
       const response = await http.post("/api/user/register", {
         ...formState,
         phone: formState.phone,
+        type: "user",
         emailVerificationToken,
       });
 
       if (response.data.success) {
         showToast("success", response.data.message);
-        setTimeout(() => navigate("/"), 1000);
+        
+        let signedInUser = response.data.user;
+        let userToken = response.data.token;
+
+        // Fallback: If backend was not restarted and did not send user/token,
+        // explicitly call the login endpoint to retrieve them natively.
+        if (!signedInUser || !userToken) {
+          try {
+            const loginRes = await http.post("/api/user/login", {
+              email: formState.email,
+              password: formState.password,
+            });
+            if (loginRes.data.success) {
+              signedInUser = loginRes.data.user;
+              userToken = loginRes.data.token;
+            }
+          } catch (e) {
+            console.error("Auto-login fallback failed", e);
+          }
+        }
+
+        if (signedInUser) {
+          localStorage.setItem("user", JSON.stringify(signedInUser));
+          if (userToken) {
+            localStorage.setItem("token", userToken);
+          }
+          if (session) {
+            session.setUserData(signedInUser);
+            session.setUserLoggedIn(true);
+          }
+        }
+
+        setTimeout(() => {
+          // Force robust refresh routing to completely guarantee App mounts with storage fully synced
+          window.location.href = "/";
+        }, 1000);
       } else {
         showToast("error", response.data.message);
       }
@@ -150,7 +189,7 @@ const Register = () => {
           <div className="mb-6">
             <p className="section-kicker">New Account</p>
             <h1 className="mt-2 text-3xl font-black text-slate-900">Create Your ApnaGhar Profile</h1>
-            <p className="mt-1 text-sm text-slate-500">Create a user or admin account. Renter/owner mode is selected from home.</p>
+            <p className="mt-1 text-sm text-slate-500">Create a user account. Renter/owner mode is selected from home.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
@@ -212,16 +251,7 @@ const Register = () => {
               className="field md:col-span-2"
             />
 
-            <select
-              name="type"
-              value={formState.type}
-              onChange={handleChange}
-              className="field md:col-span-2"
-            >
-              <option value="">Select Account Type</option>
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </select>
+
 
             <button type="submit" className="btn btn-primary md:col-span-2">Register</button>
           </form>

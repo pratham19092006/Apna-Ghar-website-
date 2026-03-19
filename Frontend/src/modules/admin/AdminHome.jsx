@@ -4,10 +4,12 @@ import { UserContext } from "../../context/userContext";
 import AllUsers from "./AllUsers";
 import AllProperty from "./AllProperty";
 import AllBookings from "./AllBookings";
+import Analytics from "./Analytics";
 import { logoutUser } from "../common/uiHelpers";
 import ApnaGharLogo from "../common/ApnaGharLogo";
 
 const ADMIN_TABS = [
+  { key: "analytics", label: "Analytics", panel: <Analytics /> },
   { key: "users", label: "All Users", panel: <AllUsers /> },
   { key: "properties", label: "All Properties", panel: <AllProperty /> },
   { key: "bookings", label: "All Bookings", panel: <AllBookings /> },
@@ -16,7 +18,7 @@ const ADMIN_TABS = [
 const AdminHome = () => {
   const session = useContext(UserContext);
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("users");
+  const [activeTab, setActiveTab] = useState("analytics");
 
   const handleLogOut = async () => {
     await logoutUser(session, navigate, "/login");

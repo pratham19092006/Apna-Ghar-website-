@@ -18,7 +18,7 @@ const formatServerError = (res, error) =>
 const EMAIL_OTP_EXPIRY_MINUTES = 10;
 const EMAIL_OTP_COOLDOWN_SECONDS = 60;
 const EMAIL_VERIFICATION_TOKEN_VALIDITY_MINUTES = 30;
-const RENT_BOOKING_FEE_RUPEES = 2;
+const RENT_BOOKING_FEE_RUPEES = 50;
 
 const normalizeEmail = (email = "") => String(email || "").trim().toLowerCase();
 
@@ -292,14 +292,8 @@ const registerController = async (req, res) => {
       });
     }
 
-    const accountType = normalizeAccountType(req.body.type);
-
-    if (!accountType) {
-      return res.status(400).send({
-        message: "Invalid account type. Allowed values are user or admin",
-        success: false,
-      });
-    }
+    // Force account type to "user" for public registrations
+    const accountType = "user";
 
     const existingUser = await UserModel.findOne({ email: normalizedEmail });
 
@@ -323,7 +317,27 @@ const registerController = async (req, res) => {
     await createdUser.save();
     await EmailVerificationModel.deleteOne({ email: normalizedEmail });
 
-    return res.status(201).send({ message: "Register Success", success: true });
+    const authToken = jwt.sign({ id: createdUser._id }, process.env.JWT_KEY, {
+      expiresIn: "1d",
+    });
+
+    createdUser.password = undefined;
+
+    const isProduction = process.env.NODE_ENV === "production";
+
+    res.cookie("token", authToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(201).send({ 
+      message: "Register Success", 
+      success: true,
+      user: createdUser,
+      token: authToken
+    });
   } catch (error) {
     console.log(error);
     return formatServerError(res, error);
