@@ -12,38 +12,25 @@ const SERVER_PORT = process.env.PORT || 8001;
 
 const normalizeOrigin = (value) => value?.trim().replace(/\/+$/, "");
 
-const defaultAllowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:5175",
-];
-
-const envAllowedOrigins = (process.env.FRONTEND_URLS || "")
-  .split(",")
-  .map((origin) => normalizeOrigin(origin))
-  .filter(Boolean);
-
-const allowedOrigins = [
-  ...new Set([...defaultAllowedOrigins.map(normalizeOrigin), ...envAllowedOrigins]),
-];
-
-// Regex patterns for wildcard matching (e.g. all Vercel preview URLs)
-// Set FRONTEND_URL_PATTERNS in Render env as comma-separated regex strings
-// Example: apna-ghar-website.*\.vercel\.app$
-const allowedOriginPatterns = (process.env.FRONTEND_URL_PATTERNS || "")
-  .split(",")
-  .map((p) => p.trim())
-  .filter(Boolean)
-  .map((p) => new RegExp(p));
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  const normalized = normalizeOrigin(origin);
+  // Always allow localhost for local dev
+  if (normalized.startsWith("http://localhost:")) return true;
+  // Always allow ANY vercel.app subdomain (covers all preview + production URLs)
+  if (normalized.endsWith(".vercel.app")) return true;
+  // Allow any extra origins set explicitly via env variable on Render
+  const extraOrigins = (process.env.FRONTEND_URLS || "")
+    .split(",")
+    .map(normalizeOrigin)
+    .filter(Boolean);
+  if (extraOrigins.includes(normalized)) return true;
+  return false;
+};
 
 const corsOptions = {
   origin(origin, callback) {
-    const normalizedOrigin = normalizeOrigin(origin);
-    if (!normalizedOrigin) return callback(null, true);
-    if (allowedOrigins.includes(normalizedOrigin)) return callback(null, true);
-    if (allowedOriginPatterns.some((regex) => regex.test(normalizedOrigin))) {
-      return callback(null, true);
-    }
+    if (isOriginAllowed(origin)) return callback(null, true);
     return callback(new Error("Not allowed by CORS"));
   },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
