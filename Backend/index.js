@@ -27,10 +27,21 @@ const allowedOrigins = [
   ...new Set([...defaultAllowedOrigins.map(normalizeOrigin), ...envAllowedOrigins]),
 ];
 
+// Regex patterns for wildcard matching (e.g. all Vercel preview URLs)
+// Set FRONTEND_URL_PATTERNS in Render env as comma-separated regex strings
+// Example: apna-ghar-website.*\.vercel\.app$
+const allowedOriginPatterns = (process.env.FRONTEND_URL_PATTERNS || "")
+  .split(",")
+  .map((p) => p.trim())
+  .filter(Boolean)
+  .map((p) => new RegExp(p));
+
 const corsOptions = {
   origin(origin, callback) {
     const normalizedOrigin = normalizeOrigin(origin);
-    if (!normalizedOrigin || allowedOrigins.includes(normalizedOrigin)) {
+    if (!normalizedOrigin) return callback(null, true);
+    if (allowedOrigins.includes(normalizedOrigin)) return callback(null, true);
+    if (allowedOriginPatterns.some((regex) => regex.test(normalizedOrigin))) {
       return callback(null, true);
     }
     return callback(new Error("Not allowed by CORS"));
