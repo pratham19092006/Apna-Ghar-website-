@@ -159,8 +159,13 @@ const requestEmailOtpController = async (req, res) => {
       message: "OTP sent to your email",
     });
   } catch (error) {
-    console.log(error);
-    return formatServerError(res, error);
+    console.error("[OTP ERROR]", error);
+    return res.status(500).send({
+      success: false,
+      message: error.message || "Unknown error",
+      errorCode: error.code || null,
+      errorCommand: error.command || null,
+    });
   }
 };
 
