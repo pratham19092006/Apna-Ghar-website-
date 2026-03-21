@@ -30,11 +30,20 @@ const hashOtp = (otp = "") =>
   crypto.createHash("sha256").update(String(otp)).digest("hex");
 
 const sendEmailOtpMessage = async (email, otp) => {
-  const { Resend } = require("resend");
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const nodemailer = require("nodemailer");
 
-  await resend.emails.send({
-    from: "ApnaGhar <onboarding@resend.dev>",
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_SMTP_HOST || "smtp.gmail.com",
+    port: Number(process.env.EMAIL_SMTP_PORT) || 587,
+    secure: process.env.EMAIL_SMTP_SECURE === "true",
+    auth: {
+      user: process.env.EMAIL_SMTP_USER,
+      pass: process.env.EMAIL_SMTP_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM || `"ApnaGhar" <${process.env.EMAIL_SMTP_USER}>`,
     to: email,
     subject: "ApnaGhar Email Verification OTP",
     html: `<p>Your ApnaGhar OTP is <b>${otp}</b>.</p><p>It expires in ${EMAIL_OTP_EXPIRY_MINUTES} minutes.</p>`,
