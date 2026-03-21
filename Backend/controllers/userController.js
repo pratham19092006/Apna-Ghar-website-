@@ -1,7 +1,6 @@
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
 const UserModel = require("../models/UserSchema");
 const PropertyModel = require("../models/PropertySchema");
 const BookingModel = require("../models/BookingSchema");
@@ -30,39 +29,14 @@ const generateEmailOtp = () => String(Math.floor(100000 + Math.random() * 900000
 const hashOtp = (otp = "") =>
   crypto.createHash("sha256").update(String(otp)).digest("hex");
 
-const getEmailTransporter = () => {
-  const host = process.env.EMAIL_SMTP_HOST;
-  const user = process.env.EMAIL_SMTP_USER;
-  const pass = process.env.EMAIL_SMTP_PASS;
-  const port = Number(process.env.EMAIL_SMTP_PORT || 587);
-  const secure = String(process.env.EMAIL_SMTP_SECURE || "false").toLowerCase() === "true";
-
-  if (!host || !user || !pass) {
-    throw new Error(
-      "Email SMTP is not configured. Set EMAIL_SMTP_HOST, EMAIL_SMTP_PORT, EMAIL_SMTP_USER, EMAIL_SMTP_PASS"
-    );
-  }
-
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: {
-      user,
-      pass,
-    },
-  });
-};
-
 const sendEmailOtpMessage = async (email, otp) => {
-  const transporter = getEmailTransporter();
-  const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_SMTP_USER;
+  const { Resend } = require("resend");
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
-  await transporter.sendMail({
-    from: fromEmail,
+  await resend.emails.send({
+    from: "ApnaGhar <onboarding@resend.dev>",
     to: email,
     subject: "ApnaGhar Email Verification OTP",
-    text: `Your ApnaGhar OTP is ${otp}. It expires in ${EMAIL_OTP_EXPIRY_MINUTES} minutes.`,
     html: `<p>Your ApnaGhar OTP is <b>${otp}</b>.</p><p>It expires in ${EMAIL_OTP_EXPIRY_MINUTES} minutes.</p>`,
   });
 };
