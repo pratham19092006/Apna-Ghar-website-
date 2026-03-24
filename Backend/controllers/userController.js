@@ -29,25 +29,36 @@ const generateEmailOtp = () => String(Math.floor(100000 + Math.random() * 900000
 const hashOtp = (otp = "") =>
   crypto.createHash("sha256").update(String(otp)).digest("hex");
 
+// Sends OTP to the user's email for verification during registration using Gmail SMTP
 const sendEmailOtpMessage = async (email, otp) => {
-  const nodemailer = require("nodemailer");
+  try {
+    const nodemailer = require("nodemailer");
+    // Configure SMTP transport for Gmail
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_SMTP_HOST || "smtp.gmail.com",
+      port: Number(process.env.EMAIL_SMTP_PORT) || 587,
+      secure: String(process.env.EMAIL_SMTP_SECURE).toLowerCase() === "true", // true for 465, false for 587
+      auth: {
+        user: process.env.EMAIL_SMTP_USER, // Gmail address
+        pass: process.env.EMAIL_SMTP_PASS, // App password (not Gmail password)
+      },
+    });
 
-  const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_SMTP_HOST || "smtp.gmail.com",
-    port: Number(process.env.EMAIL_SMTP_PORT) || 587,
-    secure: process.env.EMAIL_SMTP_SECURE === "true",
-    auth: {
-      user: process.env.EMAIL_SMTP_USER,
-      pass: process.env.EMAIL_SMTP_PASS,
-    },
-  });
+    // Email content
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || `ApnaGhar <${process.env.EMAIL_SMTP_USER}>`,
+      to: email, // User's email address
+      subject: "ApnaGhar Email Verification OTP",
+      html: `<p>Your ApnaGhar OTP is <b>${otp}</b>.</p><p>It expires in ${EMAIL_OTP_EXPIRY_MINUTES} minutes.</p>`,
+    };
 
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM || `"ApnaGhar" <${process.env.EMAIL_SMTP_USER}>`,
-    to: email,
-    subject: "ApnaGhar Email Verification OTP",
-    html: `<p>Your ApnaGhar OTP is <b>${otp}</b>.</p><p>It expires in ${EMAIL_OTP_EXPIRY_MINUTES} minutes.</p>`,
-  });
+    // Send email
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[EMAIL SENT SUCCESS] OTP sent to ${email}:`, info.response);
+  } catch (err) {
+    console.error("[OTP SEND FAILED]", err);
+    throw err;
+  }
 };
 
 const isValidPaymentIntentRef = (reference = "") =>
